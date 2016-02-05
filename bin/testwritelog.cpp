@@ -52,7 +52,7 @@ int main(int argc, char **argv) {
                    );
             return EXIT_FAILURE;
         }
-        ret = log.writeBinary();
+        ret = log.write();
         if (ret) {
             fprintf(stderr, "unable to write log: %s\n", 
                     strerror(ret)
