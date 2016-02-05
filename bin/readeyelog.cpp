@@ -1,3 +1,22 @@
+/*
+ * readeyelog.cpp this file is part of libeye and can extracts logfiles
+ *
+ * Copyright (C) 2016  Maarten Duijndam
+ * 
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ * 
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+ */
 
 #include <iostream>
 #include <cassert>
@@ -94,7 +113,7 @@ int main(int argc, char **argv) {
     }
 
     if (write_stdout) {
-        //ste to binary mode to always write '\n' as line ending
+        // set to binary mode to always write '\n' as line ending
         SET_BINARY_MODE(stdout); 
         auto& entries = log.getEntries();
         for (auto e : entries)
