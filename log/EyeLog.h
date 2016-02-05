@@ -27,7 +27,6 @@
 #include <vector>
 #include <fstream>
 #include <memory>
-//#include "EyeEvent.h"
 
 enum entrytype {
     LGAZE,
@@ -40,10 +39,23 @@ enum entrytype {
     RSAC
 };
 
+
+/* Forward declaration to classes in this header. */
 class EyeLog;
 class EyeLogEntry;
+class GazeEntry;
+class FixationEntry;
+class MessageEntry;
+class SaccadeEntry;
+class StimulusEntry;
 
-typedef std::shared_ptr<EyeLogEntry> entryptr;
+/* Shared pointers to the classes, they are used a lot.*/
+typedef std::shared_ptr<EyeLogEntry>    EntryPtr;
+typedef std::shared_ptr<GazeEntry>      GazePtr;
+typedef std::shared_ptr<FixationEntry>  FixPtr;
+typedef std::shared_ptr<MessageEntry>   MsgPtr;
+typedef std::shared_ptr<SaccadeEntry>   SacPtr;
+typedef std::shared_ptr<StimulusEntry>  StimPtr;
 
 /**
  * readLog opens a logfile
@@ -60,6 +72,7 @@ class EyeLogEntry {
 public :
 
     EyeLogEntry(entrytype etype, double eyetrktime);
+    virtual ~EyeLogEntry(){};
 
     virtual std::string toString()const = 0;
     virtual int writeBinary(std::ofstream& stream)const;
@@ -77,7 +90,7 @@ public :
     /**
      * \return the precision.
      */
-    static int getPrecision();
+    static unsigned getPrecision() ;
 
 protected :
 
@@ -87,7 +100,7 @@ protected :
     entrytype       getEntryType()  const;
 
     /**
-     *
+     * returns the time when the entry was sampled.
      */
     double          getTime() const;
 
@@ -106,6 +119,16 @@ class GazeEntry : public EyeLogEntry {
 public :
 
     GazeEntry(entrytype t, double time, float x, float y, float pupil);
+
+    static GazePtr createShared(entrytype t,
+                                double time,
+                                float x,
+                                float y,
+                                float pupil
+                                )
+    {
+        return std::make_shared<GazeEntry>(t, time, x, y, pupil);
+    }
 
     /**
      * @return a string that represents the entry type
@@ -143,6 +166,16 @@ public:
                    float x,
                    float y
             );
+    
+    static FixPtr createShared(entrytype e,
+                               double time,
+                               double dur,
+                               float x,
+                               float y
+                               )
+    {
+        return std::make_shared<FixationEntry>(FixationEntry(e, time, dur, x, y));
+    }
 
     virtual std::string toString() const;
     
@@ -163,6 +196,11 @@ class MessageEntry : public EyeLogEntry {
 public :
     MessageEntry (double eyetime, const std::string& Message);
 
+    static MsgPtr createShared(double eyetime, const std::string& Message)
+    {
+        return std::make_shared<MessageEntry>(eyetime, Message);
+    }
+
     virtual std::string toString() const;
     
     virtual int writeBinary(std::ofstream& stream) const;
@@ -180,11 +218,23 @@ public:
     SaccadeEntry (entrytype e,
                   double time,
                   double duration,
-                  double x1,
-                  double y1,
-                  double x2,
-                  double y2
+                  float x1,
+                  float y1,
+                  float x2,
+                  float y2
                   );
+
+    static SacPtr createShared(entrytype e,
+                               double time,
+                               double duration,
+                               float  x1,
+                               float  y1,
+                               float  x2,
+                               float  y2
+                               )
+    {
+        return std::make_shared<SaccadeEntry>(e, time, duration, x1, y1, x2, y2);
+    }
 
     virtual std::string toString() const;
     
@@ -232,14 +282,19 @@ public :
     void clear();
 
     /**
-     * reserves a number 
+     * Reserves a number of entries this can be
+     * used to allocate space in advance and
+     * is therefore an optimization if one knows the 
+     * size upfront.
+     *
+     * @param size The number of entries to allocate space for.
      */
     void reserve(unsigned size);
 
     /**
-     * Add's an entry to this log
+     * Adds an entry to this log
      */
-    void addEntry(entryptr entry);
+    void addEntry(EntryPtr entry);
 
     /**
      * writes the file in a binary format.
@@ -247,6 +302,16 @@ public :
      * @return returns 0 when succesfull or an value from errno.h when not.
      */
     int write(format f=BINARY)const;
+
+    /**
+     * Opens file and reads the contents, before reading
+     * The current content of this log is cleared.
+     *
+     * @param filename the name of the file to open.
+     *
+     * @return 0 or an error from errno (use eg strerror to examine).
+     */
+    int read(const std::string& filename, bool clear_content=true);
 
     /**
      * Checks whether the file is open.
@@ -259,11 +324,11 @@ public :
      */
     std::string getFilename() const;
 
-    const std::vector<entryptr>& getEntries()const;
+    const std::vector<EntryPtr>& getEntries()const;
 
 private:
 
-    std::vector<entryptr>   m_entries;
+    std::vector<EntryPtr>   m_entries;
 
     mutable std::ofstream   m_file;
 
