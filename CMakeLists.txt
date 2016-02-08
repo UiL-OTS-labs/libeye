@@ -3,6 +3,8 @@
 cmake_minimum_required(VERSION 2.6)
 project(libeye CXX) 
 
+include (GenerateExportHeader)
+
 #add versioning information
 set (LIBEYE_VERSION_MAJOR 0)
 set (LIBEYE_VERSION_MINOR 1)

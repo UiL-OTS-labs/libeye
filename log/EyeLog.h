@@ -28,6 +28,8 @@
 #include <fstream>
 #include <memory>
 
+#include <log/eyelog_export.h>
+
 enum entrytype {
     LGAZE,
     RGAZE,
@@ -65,9 +67,9 @@ typedef std::shared_ptr<StimulusEntry>  StimPtr;
  * @param out, will be initialized.
  * @param filename, the file to open.
  */
-int readLog(EyeLog* out, const std::string& filename);
+int EYELOG_EXPORT readLog(EyeLog* out, const std::string& filename);
 
-class EyeLogEntry {
+class EYELOG_EXPORT EyeLogEntry {
 
 public :
 
@@ -77,20 +79,20 @@ public :
     virtual std::string toString()const = 0;
     virtual int writeBinary(std::ofstream& stream)const;
 
-    static void setSeparator(const std::string& c);
-    static std::string getSeparator();
+    static void EYELOG_EXPORT setSeparator(const std::string& c);
+    static std::string EYELOG_EXPORT getSeparator();
 
     /**
      * sets precision used in the output(the number of decimals behind the dot).
      *
      * @param p a number between 0-8.
      */
-    static void setPrecision(unsigned p);
+    static void EYELOG_EXPORT setPrecision(unsigned p);
 
     /**
      * \return the precision.
      */
-    static unsigned getPrecision() ;
+    static unsigned EYELOG_EXPORT getPrecision() ;
 
 protected :
 
@@ -114,13 +116,13 @@ protected :
     static unsigned    m_precision;  // uses as precision in the output.
 };
 
-class GazeEntry : public EyeLogEntry {
+class EYELOG_EXPORT GazeEntry : public EyeLogEntry {
 
 public :
 
     GazeEntry(entrytype t, double time, float x, float y, float pupil);
 
-    static GazePtr createShared(entrytype t,
+    static GazePtr EYELOG_EXPORT createShared(entrytype t,
                                 double time,
                                 float x,
                                 float y,
@@ -155,7 +157,7 @@ private :
  * A fixation is best described by a start time, a duration
  * and its location.
  */
-class FixationEntry : public EyeLogEntry {
+class EYELOG_EXPORT FixationEntry : public EyeLogEntry {
 
 public:
 
@@ -167,7 +169,7 @@ public:
                    float y
             );
     
-    static FixPtr createShared(entrytype e,
+    static FixPtr EYELOG_EXPORT createShared(entrytype e,
                                double time,
                                double dur,
                                float x,
@@ -191,12 +193,12 @@ private:
 /**
  * This allows for logging custom messages
  */
-class MessageEntry : public EyeLogEntry {
+class EYELOG_EXPORT MessageEntry : public EyeLogEntry {
 
 public :
     MessageEntry (double eyetime, const std::string& Message);
 
-    static MsgPtr createShared(double eyetime, const std::string& Message)
+    static MsgPtr EYELOG_EXPORT createShared(double eyetime, const std::string& Message)
     {
         return std::make_shared<MessageEntry>(eyetime, Message);
     }
@@ -210,7 +212,7 @@ private:
     std::string  m_message;
 };
 
-class SaccadeEntry : public EyeLogEntry {
+class EYELOG_EXPORT SaccadeEntry : public EyeLogEntry {
 
 public:
 
@@ -224,7 +226,7 @@ public:
                   float y2
                   );
 
-    static SacPtr createShared(entrytype e,
+    static SacPtr EYELOG_EXPORT createShared(entrytype e,
                                double time,
                                double duration,
                                float  x1,
@@ -255,7 +257,7 @@ private:
  * Logged events start with their type sep zeptime sep eyetrackertime
  * It is possible to generate a Eyelink compatible logfile.
  */
-class EyeLog {
+class EYELOG_EXPORT EyeLog {
 
 public :
 
