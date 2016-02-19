@@ -23,9 +23,17 @@
 #include <cstring>
 #include "EyeLog.h"
 
+/*
+ * Silence MS VC++ about strdup not being part of ISO C++ it will remain valid POSIX C
+ */
+#if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
+#  define strdup _strdup
+#  pragma warning(push)
+#  pragma warning(disable:4996)
+#endif
 using namespace std;
 
-string usage = "%s <inputfile> <outputfile>";
+string usage = "%s <inputfile> <outputfile>\n";
 
 int main(int argc, char **argv) {
 
@@ -41,7 +49,7 @@ int main(int argc, char **argv) {
     output= argv[2];
 
     EyeLog log;
-    ret = readLog(&log, argv[1]);
+    ret = log.read(argv[1]);
 
     if (ret == 0) {
         ret = log.open(output);
@@ -62,3 +70,7 @@ int main(int argc, char **argv) {
     }
     return 0;
 }
+
+#if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
+#  pragma warning(pop)
+#endif

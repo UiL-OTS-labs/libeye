@@ -1,7 +1,7 @@
 /*
  * EyeLog.h
  *
- * Provides Logging for Eyetrackers.
+ * Public header that provides Logging for Eyetrackers.
  *
  * Copyright (c) 2016 M.J.A. Duijndam.
  *
@@ -19,324 +19,225 @@
  * License along with this library; if not, see Licenses at www.gnu.org.
  */
 
-
-#ifndef EYE_LOG_H
-#define EYE_LOG_H
+#include "cEyeLog.h"
+#include "constants.h"
 
 #include <string>
 #include <vector>
-#include <fstream>
 #include <memory>
+#include <cstdlib>
 
-#include <log/eyelog_export.h>
+class EyeLogEntry {
 
-enum entrytype {
-    LGAZE,
-    RGAZE,
-    LFIX,
-    RFIX,
-    STIMULUS,
-    MESSAGE,
-    LSAC,
-    RSAC
+    public:
+
+        friend class EyeLog;
+
+        EyeLogEntry(const EyeLogEntry& other)
+        {
+            mentry = eyelog_entry_clone(other.mentry);
+        }
+        EyeLogEntry(eyelog_entry* e)
+            : mentry(e)
+        {
+        }
+
+        virtual ~EyeLogEntry()
+        {
+            eyelog_entry_destroy(mentry);
+        }
+
+        void setSeparator(char c) const
+        {
+            eyelog_entry_set_separator(mentry, c);
+        }
+
+        char getSeparator() const
+        {
+            return eyelog_entry_get_separator(mentry);
+        }
+
+        void setPrecision(unsigned precision)
+        {
+            eyelog_entry_set_precision(mentry, precision);
+        }
+
+        unsigned getPrecision() const
+        {
+            return eyelog_entry_get_precision(mentry);
+        }
+
+        virtual std::string toString()const 
+        {
+            std::shared_ptr<char> tempstr(eyelog_entry_to_string(mentry), free);
+            if (tempstr) {
+                std::string ret(tempstr.get());
+                return ret;
+            } else {
+                throw std::bad_alloc();
+            }
+        }
+
+    protected:
+        
+
+        eyelog_entry*   mentry;
 };
 
+class GazeEntry : public EyeLogEntry {
+    public:
+        GazeEntry(entrytype et, double time, float x, float y, float pupsiz)
+            : EyeLogEntry(
+                    reinterpret_cast<eyelog_entry*>(
+                        gaze_entry_new(et, time, x, y, pupsiz)
+                        )
+                    )
+        {
+        }
+};
 
-/* Forward declaration to classes in this header. */
-class EyeLog;
-class EyeLogEntry;
-class GazeEntry;
-class FixationEntry;
-class MessageEntry;
-class SaccadeEntry;
-class StimulusEntry;
+class FixationEntry : public EyeLogEntry {
+    public:
+        FixationEntry(entrytype et, double time, double dur, float x, float y)
+            : EyeLogEntry(
+                    reinterpret_cast<eyelog_entry*>(
+                        fixation_entry_new(et, time, dur, x, y)
+                        )
+                    )
+        {
+        }
+};
 
-/* Shared pointers to the classes, they are used a lot.*/
-typedef std::shared_ptr<EyeLogEntry>    EntryPtr;
-typedef std::shared_ptr<GazeEntry>      GazePtr;
-typedef std::shared_ptr<FixationEntry>  FixPtr;
-typedef std::shared_ptr<MessageEntry>   MsgPtr;
-typedef std::shared_ptr<SaccadeEntry>   SacPtr;
-typedef std::shared_ptr<StimulusEntry>  StimPtr;
+class MessageEntry : public EyeLogEntry {
+    public :
+        MessageEntry(double time, const std::string& msg)
+            : EyeLogEntry(
+                    reinterpret_cast<eyelog_entry*>(
+                        message_entry_new(time, msg.c_str())
+                        )
+                    )
+        {
+        }
+};
 
-/**
- * readLog opens a logfile
- *
- * readLog opens a logfile and determines its contents.
- * tries to read the binary format first, if that fails
- * @param out, will be initialized.
- * @param filename, the file to open.
+class SaccadeEntry : public EyeLogEntry {
+    public :
+        SaccadeEntry(entrytype et,
+                     double time,
+                     double dur,
+                     float x1,
+                     float y1,
+                     float x2,
+                     float y2
+                )
+            : EyeLogEntry(
+                    reinterpret_cast<eyelog_entry*>(
+                        saccade_entry_new( et, time, dur, x1, y1, x2, y2)
+                        )
+                    )
+        {
+        }
+};
+
+class EyeLog {
+
+    public:
+        EyeLog()
+        {
+            mlog = eye_log_new();
+        }
+
+        ~EyeLog()
+        {
+            eye_log_destroy(mlog);
+        }
+
+        int open(const std::string& filename)
+        {
+            return eye_log_open(mlog, filename.c_str());
+        }
+
+        void close()
+        {
+            eye_log_close(mlog);
+        }
+
+        void clear()
+        {
+            eye_log_clear(mlog);
+        }
+
+        void reserve(unsigned n)
+        {
+            eye_log_reserve(mlog, n);
+        }
+
+        void addEntry(const EyeLogEntry& e)
+        {
+            eyelog_entry* copy = eyelog_entry_clone(e.mentry);
+            if (copy)
+                eye_log_add_entry(mlog, copy);
+            else {
+                //assert(false); // TODO error handeling
+                throw std::bad_alloc();
+            }
+        }
+
+        int write(eyelog_format format=FORMAT_BINARY)
+        {
+            return eye_log_write(mlog, format);
+        }
+
+        int read(const std::string& filename, bool clear=true)
+        {
+            return eye_log_read(mlog, filename.c_str(), clear);
+        }
+
+        bool isOpen()const
+        {
+            return eye_log_is_open(mlog);
+        }
+
+        std::string filename() const
+        {
+            return eye_log_get_filename(mlog);
+        }
+
+/*
+ * Swig doesnt like vectors with object without a default constructor.
  */
-int EYELOG_EXPORT readLog(EyeLog* out, const std::string& filename);
-
-class EYELOG_EXPORT EyeLogEntry {
-
-public :
-
-    EyeLogEntry(entrytype etype, double eyetrktime);
-    virtual ~EyeLogEntry(){};
-
-    virtual std::string toString()const = 0;
-    virtual int writeBinary(std::ofstream& stream)const;
-
-    static void EYELOG_EXPORT setSeparator(const std::string& c);
-    static std::string EYELOG_EXPORT getSeparator();
-
-    /**
-     * sets precision used in the output(the number of decimals behind the dot).
-     *
-     * @param p a number between 0-8.
-     */
-    static void EYELOG_EXPORT setPrecision(unsigned p);
-
-    /**
-     * \return the precision.
-     */
-    static unsigned EYELOG_EXPORT getPrecision() ;
-
-protected :
-
-    /**
-     * Obtains the type of item.
-     */
-    entrytype       getEntryType()  const;
-
-    /**
-     * returns the time when the entry was sampled.
-     */
-    double          getTime() const;
-
-private :
-
-    entrytype       m_type;     // the type of message
-    double          m_time;     // time on eyetracker.
-
-protected :
-    static std::string m_sep;        // separates field in the output.
-    static unsigned    m_precision;  // uses as precision in the output.
-};
-
-class EYELOG_EXPORT GazeEntry : public EyeLogEntry {
-
-public :
-
-    GazeEntry(entrytype t, double time, float x, float y, float pupil);
-
-    static GazePtr EYELOG_EXPORT createShared(entrytype t,
-                                double time,
-                                float x,
-                                float y,
-                                float pupil
+#ifndef SWIG
+        std::vector<EyeLogEntry> getEntries()const
+        {
+            eyelog_entry **entries=NULL;
+            unsigned size;
+            eye_log_get_entries(mlog, &entries, &size);
+            std::vector<EyeLogEntry> ret;
+            ret.reserve(size);
+            for (unsigned i=0; i<size; i++) {
+                ret.emplace_back(EyeLogEntry(eyelog_entry_clone(entries[i])));
+            }
+            return ret;
+        }
+#else
+        std::vector<std::shared_ptr<EyeLogEntry> > getEntries() const
+        {
+            eyelog_entry **entries=NULL;
+            unsigned size;
+            eye_log_get_entries(mlog, &entries, &size);
+            std::vector<std::shared_ptr<EyeLogEntry> > ret;
+            ret.reserve(size);
+            for (unsigned i=0; i<size; i++) {
+                ret.push_back(
+                        std::make_shared<EyeLogEntry>(
+                            eyelog_entry_clone(entries[i])
                                 )
-    {
-        return std::make_shared<GazeEntry>(t, time, x, y, pupil);
-    }
-
-    /**
-     * @return a string that represents the entry type
-     */
-    virtual std::string toString() const;
-
-    /**
-     * write an entry to and output stream.
-     *
-     * @param stream a opened ofstream for binary data.
-     */
-    virtual int writeBinary(std::ofstream& stream) const;
-
-private :
-
-    float m_x;
-    float m_y;
-    float m_pupil;
-};
-
-/**
- * FixationEntry contains the parameters about a fixation.
- *
- * A fixation is best described by a start time, a duration
- * and its location.
- */
-class EYELOG_EXPORT FixationEntry : public EyeLogEntry {
-
-public:
-
-    //FixationEntry (const Fixation& fix);
-    FixationEntry (entrytype e,
-                   double time,
-                   double duration,
-                   float x,
-                   float y
-            );
-    
-    static FixPtr EYELOG_EXPORT createShared(entrytype e,
-                               double time,
-                               double dur,
-                               float x,
-                               float y
-                               )
-    {
-        return std::make_shared<FixationEntry>(FixationEntry(e, time, dur, x, y));
-    }
-
-    virtual std::string toString() const;
-    
-    virtual int writeBinary(std::ofstream& stream) const;
-
-private:
-
-    double  m_dur;     // the duration of the fixation
-    float   m_x;       
-    float   m_y;
-};
-
-/**
- * This allows for logging custom messages
- */
-class EYELOG_EXPORT MessageEntry : public EyeLogEntry {
-
-public :
-    MessageEntry (double eyetime, const std::string& Message);
-
-    static MsgPtr EYELOG_EXPORT createShared(double eyetime, const std::string& Message)
-    {
-        return std::make_shared<MessageEntry>(eyetime, Message);
-    }
-
-    virtual std::string toString() const;
-    
-    virtual int writeBinary(std::ofstream& stream) const;
-
-private:
-
-    std::string  m_message;
-};
-
-class EYELOG_EXPORT SaccadeEntry : public EyeLogEntry {
-
-public:
-
-    //FixationEntry (const Fixation& fix);
-    SaccadeEntry (entrytype e,
-                  double time,
-                  double duration,
-                  float x1,
-                  float y1,
-                  float x2,
-                  float y2
-                  );
-
-    static SacPtr EYELOG_EXPORT createShared(entrytype e,
-                               double time,
-                               double duration,
-                               float  x1,
-                               float  y1,
-                               float  x2,
-                               float  y2
-                               )
-    {
-        return std::make_shared<SaccadeEntry>(e, time, duration, x1, y1, x2, y2);
-    }
-
-    virtual std::string toString() const;
-    
-    virtual int writeBinary(std::ofstream& stream) const;
-
-private:
-
-    double  m_dur;     // the duration of the saccade
-    float   m_x1;
-    float   m_y1;
-    float   m_x2;
-    float   m_y2;
-};
-
-
-/**
- * EyeLog is a utility to log events. Logged times are in milliseconds
- * Logged events start with their type sep zeptime sep eyetrackertime
- * It is possible to generate a Eyelink compatible logfile.
- */
-class EYELOG_EXPORT EyeLog {
-
-public :
-
-    enum format {BINARY, CSV /*,EYELINK_ASC*/};
-
-    EyeLog();
-    ~EyeLog();
-
-    /**
-     * open the log file
-     * 
-     * @return 0 if succesfull, -1 if not.
-     */
-    int open(const std::string& fname);
-
-    /**
-     * close the log file
-     */
-    void close();
-
-    /**
-     * clears all contents.
-     */
-    void clear();
-
-    /**
-     * Reserves a number of entries this can be
-     * used to allocate space in advance and
-     * is therefore an optimization if one knows the 
-     * size upfront.
-     *
-     * @param size The number of entries to allocate space for.
-     */
-    void reserve(unsigned size);
-
-    /**
-     * Adds an entry to this log
-     */
-    void addEntry(EntryPtr entry);
-
-    /**
-     * writes the file in a binary format.
-     *
-     * @return returns 0 when succesfull or an value from errno.h when not.
-     */
-    int write(format f=BINARY)const;
-
-    /**
-     * Opens file and reads the contents, before reading
-     * The current content of this log is cleared.
-     *
-     * @param filename the name of the file to open.
-     *
-     * @return 0 or an error from errno (use eg strerror to examine).
-     */
-    int read(const std::string& filename, bool clear_content=true);
-
-    /**
-     * Checks whether the file is open.
-     */
-    bool isOpen() const; 
-
-    /**
-     * Returns the filename. You still need to check
-     * whether the file is open.
-     */
-    std::string getFilename() const;
-
-    const std::vector<EntryPtr>& getEntries()const;
-
-private:
-
-    std::vector<EntryPtr>   m_entries;
-
-    mutable std::ofstream   m_file;
-
-    std::string             m_filename;
-    bool                    m_isopen;
-    bool                    m_writebinary;
-};
-
+                            );
+            }
+            return ret;
+        }
 #endif
+
+    private:
+        eye_log*    mlog;
+};
