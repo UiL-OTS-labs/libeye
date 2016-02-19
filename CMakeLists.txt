@@ -3,6 +3,8 @@
 cmake_minimum_required(VERSION 2.6)
 project(libeye CXX) 
 
+include (GenerateExportHeader)
+
 #add versioning information
 set (LIBEYE_VERSION_MAJOR 0)
 set (LIBEYE_VERSION_MINOR 1)
@@ -12,7 +14,7 @@ set (LIBEYE_VERSION_STRING
     )
 
 if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS ${CXX_FLAGS} "-std=c++11 -Wall -Wextra -pedantic")
+    set(CMAKE_CXX_FLAGS ${CXX_FLAGS} "-std=c++0x -Wall -Wextra -pedantic")
 endif()
 
 # setting of general options
@@ -27,6 +29,7 @@ configure_file(
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}/log")
+include_directories("${CMAKE_BINARY_DIR}/log")
 
 #add the log library direcory
 add_subdirectory(log)

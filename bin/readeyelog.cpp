@@ -24,15 +24,26 @@
 #include <cstring>
 #include "EyeLog.h"
 
-/**
+/*
  * the next hack is taken from http://www.zlib.net/zlib_how.html
+ * A small modification is the underscore before setmode and fileno, this silences some 
+ * MS VC++ warnings.
  */
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
 #  include <fcntl.h>
 #  include <io.h>
-#  define SET_BINARY_MODE(file) setmode(fileno(file), O_BINARY)
+#  define SET_BINARY_MODE(file) _setmode(_fileno(file), O_BINARY)
 #else
 #  define SET_BINARY_MODE(file)
+#endif
+
+/*
+ * Silence MS VC++ about strdup not being part of ISO C++ it will remain valid POSIX C
+ */
+#if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
+#  define strdup _strdup
+#  pragma warning(push)
+#  pragma warning(disable:4996)
 #endif
 
 using namespace std;
@@ -106,7 +117,7 @@ int main(int argc, char **argv) {
     assert (write_csv != write_binary);
 
     EyeLog log;
-    ret = readLog(&log, input);
+    ret = log.read(input);
     if (ret) {
         cerr << "Unable to open log: " << strerror(ret) << endl;
         return EXIT_FAILURE;
@@ -115,9 +126,9 @@ int main(int argc, char **argv) {
     if (write_stdout) {
         // set to binary mode to always write '\n' as line ending
         SET_BINARY_MODE(stdout); 
-        auto& entries = log.getEntries();
-        for (auto e : entries)
-            cout << e->toString() << '\n';
+        auto entries = log.getEntries();
+        for (const auto& e : entries)
+            cout << e.toString() << '\n';
     } else {
         ret = log.open(output);
         if (ret) {
@@ -125,9 +136,9 @@ int main(int argc, char **argv) {
             return EXIT_FAILURE;
         }
         if (write_csv)
-            ret = log.write(EyeLog::CSV);
+            ret = log.write(FORMAT_CSV);
         else
-            ret = log.write(EyeLog::BINARY);
+            ret = log.write(FORMAT_BINARY);
         
         if (ret) {
             cerr << "unable to write: " << strerror(ret) << endl;
@@ -137,3 +148,8 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
+
+#if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
+#  pragma warning(pop)
+#endif
