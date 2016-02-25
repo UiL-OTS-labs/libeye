@@ -175,10 +175,24 @@ int PEyeLog::read(const string& file, bool clear_content) {
 int PEyeLog::write(eyelog_format f) const
 {
     int ret = 0;
-    for (const auto& entry : m_entries) {
-        ret = entry->writeBinary(m_file);
-        if (ret)
-            return ret;
+    if (f == FORMAT_BINARY) {
+        for (const auto& entry : m_entries) {
+            ret = entry->writeBinary(m_file);
+            if (ret)
+                return ret;
+        }
+    } else {
+        for (unsigned i = 0; i < m_entries.size(); ++i) {
+            std::string line;
+            if (i == m_entries.size() -1)
+                line = m_entries[i]->toString() + '\n';
+            else
+                line = m_entries[i]->toString();
+
+            if (m_file << line) {
+                return errno;
+            }
+        }
     }
     return ret;
 }
