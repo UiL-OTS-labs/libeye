@@ -19,13 +19,21 @@
  * License along with this library; if not, see Licenses at www.gnu.org.
  */
 
+#ifndef EYELOG_H
+#define EYELOG_H
+
 #include "cEyeLog.h"
 #include "constants.h"
+#include "Shapes.h"
 
 #include <string>
 #include <vector>
 #include <memory>
 #include <cstdlib>
+
+#include "Shapes.h"
+
+typedef Coordinate<float> GazePoint;
 
 class EyeLogEntry {
 
@@ -67,7 +75,7 @@ class EyeLogEntry {
             return eyelog_entry_get_precision(mentry);
         }
 
-        virtual std::string toString()const 
+        virtual std::string toString()const throw(std::bad_alloc)
         {
             std::shared_ptr<char> tempstr(eyelog_entry_to_string(mentry), free);
             if (tempstr) {
@@ -94,6 +102,48 @@ class GazeEntry : public EyeLogEntry {
                     )
         {
         }
+
+        float getX() const
+        {
+            return gaze_entry_get_x(getSelfConst());
+        }
+
+        float getY() const
+        {
+            return gaze_entry_get_y(getSelfConst());
+        }
+
+        GazePoint getCoordinate()const
+        {
+            return GazePoint(getX(), getY());
+        }
+
+        void setX(float x)
+        {
+            gaze_entry_set_x(getSelf(), x);
+        }
+
+        void setY(float y)
+        {
+            gaze_entry_set_y(getSelf(), y);
+        }
+
+        void setCoordinate(const GazePoint& g)
+        {
+            setX(g.x);
+            setY(g.y);
+        }
+    
+    private:
+        gaze_entry* getSelf()
+        {
+            return reinterpret_cast<gaze_entry*>(mentry);
+        }
+        
+        const gaze_entry* getSelfConst() const
+        {
+            return reinterpret_cast<gaze_entry*>(mentry);
+        }
 };
 
 class FixationEntry : public EyeLogEntry {
@@ -106,6 +156,48 @@ class FixationEntry : public EyeLogEntry {
                     )
         {
         }
+
+        float getX() const
+        {
+            return fixation_entry_get_x(getSelfConst());
+        }
+        
+        float getY() const
+        {
+            return fixation_entry_get_y(getSelfConst());
+        }
+
+        GazePoint getCoordinate() const
+        {
+            return GazePoint(getX(), getY());
+        }
+
+        void setX(float x)
+        {
+            fixation_entry_set_x(getSelf(), x);
+        }
+
+        void setY(float y)
+        {
+            fixation_entry_set_y(getSelf(), y);
+        }
+
+        void setCoordinate(const GazePoint& g)
+        {
+            setX(g.x);
+            setY(g.y);
+        }
+
+    private:
+        fixation_entry* getSelf()
+        {
+            return reinterpret_cast<fixation_entry*>(mentry);
+        }
+        
+        const fixation_entry* getSelfConst() const
+        {
+            return reinterpret_cast<fixation_entry*>(mentry);
+        }
 };
 
 class MessageEntry : public EyeLogEntry {
@@ -117,6 +209,32 @@ class MessageEntry : public EyeLogEntry {
                         )
                     )
         {
+        }
+
+        std::string getMessage()const throw (std::bad_alloc)
+        {
+            const message_entry* self= getSelfConst();
+            std::shared_ptr<char> m(message_entry_get_message(self), free);
+            if (m)
+                return std::string(m.get());
+            throw std::bad_alloc();
+        }
+
+        void setMessage(const std::string& m)
+        {
+            message_entry* self = getSelf();
+            message_entry_set_message(self, m.c_str());
+        }
+    private:
+
+        message_entry* getSelf()
+        {
+            return reinterpret_cast<message_entry*>(mentry);
+        }
+        
+        const message_entry* getSelfConst() const
+        {
+            return reinterpret_cast<message_entry*>(mentry);
         }
 };
 
@@ -136,6 +254,88 @@ class SaccadeEntry : public EyeLogEntry {
                         )
                     )
         {
+        }
+
+        float getX1()const
+        {
+            return saccade_entry_get_x1(getSelfConst());
+        }
+
+        float getY1()const
+        {
+            return saccade_entry_get_y1(getSelfConst());
+        }
+
+        GazePoint getCoordinate1()const
+        {
+            const saccade_entry* self = getSelfConst();
+            return GazePoint(saccade_entry_get_x1(self),
+                             saccade_entry_get_y1(self)
+                             );
+        }
+
+        float getX2() const
+        {
+            return saccade_entry_get_x2(getSelfConst());
+        }
+        
+        float getY2() const
+        {
+            return saccade_entry_get_y2(getSelfConst());
+        }
+
+        GazePoint getCoordinate2() const
+        {
+            const saccade_entry* self = getSelfConst();
+            return GazePoint(saccade_entry_get_x2(self),
+                             saccade_entry_get_y2(self)
+                             );
+        }
+
+        void setX1(float x)
+        {
+            saccade_entry_set_x1(getSelf(), x);
+        }
+        
+        void setY1(float y)
+        {
+            saccade_entry_set_y1(getSelf(), y);
+        }
+
+        void setCoordinate1(const GazePoint& g)
+        {
+            saccade_entry* self = getSelf();
+            saccade_entry_set_x1(self, g.x);
+            saccade_entry_set_y1(self, g.y);
+        }
+
+        void setX2(float x)
+        {
+            saccade_entry_set_x2(getSelf(), x);
+        }
+
+        void setY2(float y)
+        {
+            saccade_entry_set_y2(getSelf(), y);
+        }
+
+        void setCoordinate2(const GazePoint& g)
+        {
+            saccade_entry* self = getSelf();
+            saccade_entry_set_x2(self, g.x);
+            saccade_entry_set_y2(self, g.y);
+        }
+
+    private:
+
+        saccade_entry* getSelf()
+        {
+            return reinterpret_cast<saccade_entry*>(mentry);
+        }
+
+        const saccade_entry* getSelfConst()const
+        {
+            return reinterpret_cast<saccade_entry*>(mentry);
         }
 };
 
@@ -172,7 +372,7 @@ class EyeLog {
             eye_log_reserve(mlog, n);
         }
 
-        void addEntry(const EyeLogEntry& e)
+        void addEntry(const EyeLogEntry& e) throw (std::bad_alloc)
         {
             eyelog_entry* copy = eyelog_entry_clone(e.mentry);
             if (copy)
@@ -241,3 +441,5 @@ class EyeLog {
     private:
         eye_log*    mlog;
 };
+
+#endif
