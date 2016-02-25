@@ -5,6 +5,7 @@ set (LOG_SOURCES
         PEyeLogEntry.cpp
         PCoordinate.cpp
         cEyeLog.cpp
+        cError.cpp
         )
 
 # headers to build the library
@@ -13,6 +14,7 @@ set (LOG_HEADERS
         PEyeLogEntry.h
         PCoordinate.h
         cEyeLog.h
+        cError.h
         )
 
 # headers needed to use the library.

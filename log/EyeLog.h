@@ -23,6 +23,7 @@
 #define EYELOG_H
 
 #include "cEyeLog.h"
+#include "cError.h"
 #include "constants.h"
 #include "Shapes.h"
 

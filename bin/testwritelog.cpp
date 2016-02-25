@@ -56,14 +56,14 @@ int main(int argc, char **argv) {
         if (ret) {
             fprintf(stderr, "unable to open %s: %s\n", 
                     output.c_str(),
-                    strerror(ret)
+                    eyelog_error(ret)
                    );
             return EXIT_FAILURE;
         }
         ret = log.write();
         if (ret) {
             fprintf(stderr, "unable to write log: %s\n", 
-                    strerror(ret)
+                    eyelog_error(ret)
                    );
             return EXIT_FAILURE;
         }
@@ -71,6 +71,3 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-#if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
-#  pragma warning(pop)
-#endif

@@ -21,6 +21,7 @@
  */
 
 #include "PEyeLog.h"
+#include "cError.h"
 #include <cassert>
 #include <cerrno>
 #include <sstream>
@@ -165,7 +166,8 @@ void PEyeLog::addEntry(PEyeLogEntry* p)
     m_entries.push_back(p);
 }
 
-int PEyeLog::read(const string& file, bool clear_content) {
+int PEyeLog::read(const string& file, bool clear_content)
+{
     if (clear_content)
         clear();
     
@@ -181,7 +183,8 @@ int PEyeLog::write(eyelog_format f) const
             if (ret)
                 return ret;
         }
-    } else {
+    }
+    else if (f == FORMAT_CSV) {
         for (unsigned i = 0; i < m_entries.size(); ++i) {
             std::string line;
             if (i == m_entries.size() -1)
@@ -193,6 +196,9 @@ int PEyeLog::write(eyelog_format f) const
                 return errno;
             }
         }
+    }
+    else {
+        ret = ERR_INVALID_PARAMETER;
     }
     return ret;
 }
@@ -259,6 +265,7 @@ int readAscManual(std::ifstream& stream, PEyeLog* plog)
 {
     vector<string> lines = getLines(stream);
     bool isleft = false;
+    std::vector<PEyeLogEntry>::size_type startsize = plog->getEntries().size();
 
     // loops over all lines ignoring those values it doesn't understand
     for (const auto& line : lines) {
@@ -351,7 +358,7 @@ int readAscManual(std::ifstream& stream, PEyeLog* plog)
             }
         }
     }
-    return 0;
+    return plog->getEntries().size() > startsize ? 0 : ERR_INVALID_FILE_FORMAT;
 }
 
 int readCsvFormat(std::ifstream& stream, PEyeLog* plog)
@@ -370,7 +377,7 @@ int readCsvFormat(std::ifstream& stream, PEyeLog* plog)
         else if (stream.eof())
             break;
         else {
-            return 1;
+            return ERR_INVALID_FILE_FORMAT;
         }
         switch (e = entrytype(type)) {
             case LGAZE:
@@ -379,7 +386,7 @@ int readCsvFormat(std::ifstream& stream, PEyeLog* plog)
                     plog->addEntry(new PGazeEntry(e, time, x1, y1, p));
                 else {
                     noerror = false;
-                    return 1;
+                    return ERR_INVALID_FILE_FORMAT;
                 }
                 break;
             case LFIX:
@@ -390,7 +397,7 @@ int readCsvFormat(std::ifstream& stream, PEyeLog* plog)
                             );
                 else {
                     noerror = false;
-                    return 1;
+                    return ERR_INVALID_FILE_FORMAT;
                 }
                 break;
             case STIMULUS:
@@ -412,7 +419,7 @@ int readCsvFormat(std::ifstream& stream, PEyeLog* plog)
                 }
                 else {
                     noerror = false;
-                    return 1;
+                    return ERR_INVALID_FILE_FORMAT;
                 }
                 break;
             case LSAC:
@@ -423,11 +430,11 @@ int readCsvFormat(std::ifstream& stream, PEyeLog* plog)
                             );
                 else {
                     noerror = false;
-                    return 1;
+                    return ERR_INVALID_FILE_FORMAT;
                 }
                 break;
             default:
-                result = 1;
+                result = ERR_INVALID_FILE_FORMAT;
                 noerror = false;
         };
     }
@@ -517,7 +524,7 @@ int readLog(PEyeLog* out, const string& filename) {
         result = readCsvFormat(stream, out);
     }
 
-    /*Clear file status try read in Eyeling EDF format*/
+    /*Clear file status try read in Eyelink EDF format*/
     if (result != 0) {
         stream.seekg(0);
         stream.clear();
