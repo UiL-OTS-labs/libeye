@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
     EyeLog log;
     ret = log.read(input);
     if (ret) {
-        cerr << "Unable to open log: " << strerror(ret) << endl;
+        cerr << "Unable to open log: " << eyelog_error(ret) << endl;
         return EXIT_FAILURE;
     }
 
@@ -132,7 +132,8 @@ int main(int argc, char **argv) {
     } else {
         ret = log.open(output);
         if (ret) {
-            cerr << "Unable to open " << output << ": "<< strerror(ret) << endl;
+            cerr << "Unable to open " << output << ": "<<
+                eyelog_error(ret) << endl;
             return EXIT_FAILURE;
         }
         if (write_csv)
@@ -141,7 +142,7 @@ int main(int argc, char **argv) {
             ret = log.write(FORMAT_BINARY);
         
         if (ret) {
-            cerr << "unable to write: " << strerror(ret) << endl;
+            cerr << "unable to write: " << eyelog_error(ret) << endl;
             return EXIT_FAILURE;
         }
     }

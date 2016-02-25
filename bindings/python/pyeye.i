@@ -8,7 +8,10 @@
 #define SWIG
 #endif
 
+#include "eyelog_export.h"
 #include "EyeLog.h"
+#include "cError.h"
+
 %}
 
 %include "std_vector.i"
@@ -26,8 +29,11 @@
 #define SWIG
 #endif
 
+
+%include "eyelog_export.h"
 %include "constants.h"
 %include "Shapes.h"
+%include "cError.h"
 %include "EyeLog.h"
 
 %template (Coordinatei) Coordinate<int>;
