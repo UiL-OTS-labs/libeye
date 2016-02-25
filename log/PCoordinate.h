@@ -1,7 +1,7 @@
 /*
- * EyeEvent.h
+ * PCoordinate.h
  *
- * Provides events that occur in an eyetracking experiment.
+ * Public header that provides coordinates to the log classes.
  *
  * Copyright (c) 2016 M.J.A. Duijndam.
  *
@@ -19,38 +19,29 @@
  * License along with this library; if not, see Licenses at www.gnu.org.
  */
 
-class PGaze {
-    
+#ifndef PCOORDINATE_H
+#define PCOORDINATE_H
+
+
+/**
+ * PCoordinate a simple class that can specify a coordinate in 2D space
+ */
+class PCoordinate {
+
     public:
 
-        PGaze(const Coordinate& coor);
-        float getX() const;
-        float getY() const;
+        PCoordinate();
+        PCoordinate(float x, float y);
+
+        float getX()const;
+        float getY()const;
         void setX(float x);
         void setY(float y);
 
-    protected:
+    private:
 
-        PCoordinate m_coor;
+        float   m_x;
+        float   m_y;
 };
 
-/**
- * Get information about a fixation.
- * 
- * Fixations are mainly charachterized by
- * there, position and duration.
- */
-class PFixation{
-
-    public:
-
-        PFixation(double dur, float x, float y);
-        double getDuration() const;
-        float getX() const;
-        float getY() const;
-
-    protected:
-
-        double      m_dur;
-        PCoordinate m_coor;
-};
+#endif

@@ -1,5 +1,7 @@
 /*
- * PEyeLog.cpp this file is part of libeye and responsible for logging experiments
+ * PEyeLog.cpp
+ *
+ * This file is part of libeye and responsible for logging experiments
  *
  * Copyright (C) 2016  Maarten Duijndam
  * 
@@ -19,120 +21,16 @@
  */
 
 #include "PEyeLog.h"
-#include <sstream>
 #include <cassert>
 #include <cerrno>
+#include <sstream>
 #include <cctype>
 #include <iostream>
 
 
 using namespace std;
 
-/*** PEyeLogEntry ***/
-
-string PEyeLogEntry::m_sep = "\t";
-
-unsigned PEyeLogEntry::m_precision = 2;
-
-PEyeLogEntry::PEyeLogEntry(entrytype etype, double time)
-    : m_type(etype), m_time(time)
-{
-}
-
-void PEyeLogEntry::setSeparator(const std::string& sep) {
-    m_sep = sep;
-}
-
-string PEyeLogEntry::getSeparator() {
-    return m_sep;
-}
-
-void PEyeLogEntry::setPrecision(unsigned p) {
-    if (p > 8)
-        p = 8;
-    m_precision = p;
-}
-
-unsigned PEyeLogEntry::getPrecision(){
-    return m_precision;
-}
-
-entrytype PEyeLogEntry::getEntryType() const {
-    return m_type;
-}
-
-double PEyeLogEntry::getTime()const {
-    return m_time;
-}
-
-int PEyeLogEntry::writeBinary(ofstream& stream) const
-{
-    uint16_t type = getEntryType();
-    double time = getTime();
-    if (!stream.write(reinterpret_cast<const char*>(&type), sizeof(type)))
-        return errno;
-    if (!stream.write(reinterpret_cast<const char*>(&time), sizeof(time)))
-        return errno;
-    return 0;
-}
-
-/*** PGazeEntry ***/
-
-PGazeEntry::PGazeEntry(entrytype t,
-                     double time,
-                     float x,
-                     float y,
-                     float pupil
-                     )
-    : PEyeLogEntry(t, time),
-      m_x(x),
-      m_y(y),
-      m_pupil(pupil)
-{
-    assert(t == LGAZE || t == RGAZE);
-}
-
-PGazeEntry::PGazeEntry(const PGazeEntry& other)
-    : PEyeLogEntry(other.getEntryType(), other.getTime()),
-      m_x(other.m_x),
-      m_y(other.m_y),
-      m_pupil(other.m_pupil)
-{
-}
-
-PEyeLogEntry* PGazeEntry::clone() const
-{
-    return new PGazeEntry(*this);
-}
-
-string PGazeEntry::toString()const
-{
-    stringstream stream;
-    stream.setf(ios::fixed);
-    stream.precision(m_precision);
-    const string sep(getSeparator());
-
-    stream << int(getEntryType()) << sep <<
-        getTime() << sep <<
-        m_x << sep <<
-        m_y << sep <<
-        m_pupil;
-    return stream.str();
-}
-
-int PGazeEntry::writeBinary(ofstream& stream)const
-{
-    int ret;
-    if ((ret = PEyeLogEntry::writeBinary(stream)) != 0)
-        return ret;
-    if (!stream.write(reinterpret_cast<const char*>(&m_x), sizeof(m_x)))
-        return errno;
-    if (!stream.write(reinterpret_cast<const char*>(&m_y), sizeof(m_y)))
-        return errno;
-    if (!stream.write(reinterpret_cast<const char*>(&m_pupil), sizeof(m_pupil)))
-        return errno;
-    return ret;
-}
+/* reading of binary gaze entries */
 
 int readBinaryGaze(ifstream& stream, PEyeLogEntry** out, entrytype et) {
     double time;
@@ -152,64 +50,6 @@ int readBinaryGaze(ifstream& stream, PEyeLogEntry** out, entrytype et) {
 
     *out = new PGazeEntry(et, time, x, y, pupil);
     return 0;
-}
-
-PFixationEntry::PFixationEntry(entrytype t,
-                             double time,
-                             double duration,
-                             float x,
-                             float y
-                             )
-    : PEyeLogEntry(t, time),
-      m_dur(duration),
-      m_x(x),
-      m_y(y)
-{
-    assert(t == LFIX || t == RFIX);
-}
-
-PFixationEntry::PFixationEntry(const PFixationEntry& other)
-    : PEyeLogEntry(other.getEntryType(), other.getTime()),
-      m_dur(other.m_dur),
-      m_x(other.m_x),
-      m_y(other.m_y)
-{
-}
-
-PEyeLogEntry* PFixationEntry::clone()const
-{
-    return new PFixationEntry(*this);
-}
-
-string PFixationEntry::toString() const
-{
-    stringstream stream;
-    stream.setf(ios::fixed);
-    stream.precision(m_precision);
-    const string sep(getSeparator());
-
-    stream << int(getEntryType()) << sep <<
-              getTime() << sep <<
-              m_dur << sep <<
-              m_x << sep <<
-              m_y << sep;
-
-    return stream.str();
-}
-
-int PFixationEntry::writeBinary(ofstream& stream) const
-{
-    int ret;
-    if ((ret = PEyeLogEntry::writeBinary(stream)) != 0)
-        return ret;
-    if (!stream.write(reinterpret_cast<const char*>(&m_dur), sizeof(m_dur)))
-        return errno;
-    if (!stream.write(reinterpret_cast<const char*>(&m_x), sizeof(m_x)))
-        return errno;
-    if (!stream.write(reinterpret_cast<const char*>(&m_y), sizeof(m_y)))
-        return errno;
-            
-    return ret;
 }
 
 int readBinaryFix(ifstream& stream, PEyeLogEntry** out, entrytype et) {
@@ -234,54 +74,6 @@ int readBinaryFix(ifstream& stream, PEyeLogEntry** out, entrytype et) {
     return 0;
 }
 
-PMessageEntry::PMessageEntry(double time,
-                           const string& msg
-                           )
-    : PEyeLogEntry(MESSAGE, time),
-      m_message(msg)
-{
-}
-
-PMessageEntry::PMessageEntry(const PMessageEntry& other)
-    : PEyeLogEntry(other.getEntryType(), other.getTime()),
-      m_message(other.m_message)
-{
-}
-
-PEyeLogEntry* PMessageEntry::clone()const
-{
-    return new PMessageEntry(*this);
-}
-
-string PMessageEntry::toString()const
-{
-    stringstream stream;
-    stream.setf(ios::fixed);
-    stream.precision(m_precision);
-    const string sep(getSeparator());
-
-    stream << int(getEntryType()) << sep <<
-        getTime() << sep <<
-        m_message;
-
-    return stream.str();
-}
-
-int PMessageEntry::writeBinary(ofstream& stream) const
-{
-    int ret;
-    uint32_t size = m_message.size();
-
-    if ((ret = PEyeLogEntry::writeBinary(stream)) != 0)
-        return ret;
-    if (!stream.write(reinterpret_cast<const char*>(&size), sizeof(size)))
-        return errno;
-    if (!stream.write(m_message.c_str(), size))
-        return errno;
-            
-    return ret;
-}
-
 int readBinaryMessage(ifstream& stream, PEyeLogEntry** out) {
     double time;
     uint32_t size;
@@ -300,78 +92,6 @@ int readBinaryMessage(ifstream& stream, PEyeLogEntry** out) {
     *out = new PMessageEntry(time, msg);
 
     return 0;
-}
-
-
-PSaccadeEntry::PSaccadeEntry( entrytype t,
-                              double time,
-                              double duration,
-                              float x1,
-                              float y1,
-                              float x2,
-                              float y2
-                              )
-    : PEyeLogEntry(t, time),
-      m_dur(duration),
-      m_x1(x1),
-      m_y1(y1),
-      m_x2(x2),
-      m_y2(y2)
-{
-    assert(t == LSAC || t == RSAC);
-}
-
-PSaccadeEntry::PSaccadeEntry(const PSaccadeEntry& other)
-    : PEyeLogEntry(other.getEntryType(), other.getTime()),
-      m_dur(other.m_dur),
-      m_x1(other.m_x1),
-      m_y1(other.m_y1),
-      m_x2(other.m_x2),
-      m_y2(other.m_y2)
-{
-}
-
-PEyeLogEntry* PSaccadeEntry::clone()const
-{
-    return new PSaccadeEntry(*this);
-}
-
-string PSaccadeEntry::toString() const
-{
-    stringstream stream;
-    stream.setf(ios::fixed);
-    stream.precision(m_precision);
-    const string sep(getSeparator());
-
-    stream << int(getEntryType()) << sep <<
-              getTime() << sep <<
-              m_dur<< sep <<
-              m_x1 << sep <<
-              m_y1 << sep <<
-              m_x2 << sep <<
-              m_y2 << sep;
-
-    return stream.str();
-}
-
-int PSaccadeEntry::writeBinary(ofstream& stream) const
-{
-    int ret;
-
-    if ((ret = PEyeLogEntry::writeBinary(stream)) != 0)
-        return ret;
-    if (!stream.write(reinterpret_cast<const char*>(&m_dur), sizeof(m_dur)))
-        return errno;
-    if (!stream.write(reinterpret_cast<const char*>(&m_x1), sizeof(m_x1)))
-        return errno;
-    if (!stream.write(reinterpret_cast<const char*>(&m_y1), sizeof(m_y1)))
-        return errno;
-    if (!stream.write(reinterpret_cast<const char*>(&m_x2), sizeof(m_x2)))
-        return errno;
-    if (!stream.write(reinterpret_cast<const char*>(&m_y2), sizeof(m_y2)))
-        return errno;
-
-    return ret;
 }
 
 int readBinarySac(ifstream& stream, PEyeLogEntry** out, entrytype et) {
@@ -478,7 +198,7 @@ const std::vector<PEyeLogEntry*>& PEyeLog::getEntries()const
     return m_entries;
 }
 
-/********
+/* *******
  * Implementation of functions that load a PEyeLog from disk.
  */
 
@@ -511,148 +231,6 @@ vector<string> getLines(ifstream& stream)
         output.push_back(buffer);
     return output;
 }
-
-
-//int readAscFormat(ifstream& stream, PEyeLog* plog)
-//{
-//    int result = 0;
-//    //vector<string> lines = getLines(stream);
-//    assert(stream.is_open());
-//    std::vector<string> content = getLines(stream);
-//    plog->clear();
-//    bool isleft(false);
-//
-//    // Regular expressiong for a float in a Asc file, not
-//    // a general regular expression. Note the the float is
-//    // grouped.
-//    string cflt     = R"(([-+]?[0-9]*\.?[0-9]+))";
-//    string space    = R"(\s+)";
-//    string cdigit   = R"((\d+))";
-//
-//    string remsg    = R"(MSG\s+(\d+)\s+([^\r\n]*).*)";
-//    string resampleformat = R"(^SAMPLES\s+GAZE\s+(\w+).+)";
-//    string reduosample = cdigit + space +
-//                         cflt   + space +
-//                         cflt   + space +
-//                         cflt   + space + 
-//                         cflt   + space +
-//                         cflt   + space +
-//                         cflt   + ".*$";
-//
-//    string remonosample = cdigit + space +
-//                          cflt   + space +
-//                          cflt   + space +
-//                          cflt   + ".*$";
-//    
-//    string reendfix = R"(^EFIX)" + space + R"((R|L))" + space +
-//                               cdigit + space +
-//                               cdigit + space +
-//                               cdigit + space +
-//                               cflt   + space +
-//                               cflt   + space +
-//                               cdigit + ".*";
-//
-//    //cout << "remsg = " << remsg << endl;
-//    //cout << "resampleformat= " << resampleformat << endl;
-//    //cout << "reduosample= " << reduosample << endl;
-//    //cout << "remonosample= " << remonosample << endl;
-//    //cout << "reendfix= " << reendfix << endl;
-//
-//    regex msg (remsg);
-//    regex duosample (reduosample);
-//    regex monosample (remonosample);
-//    regex endfix (reendfix);
-//    regex sampleformat (resampleformat);
-//    
-//    for (const auto& line : content) {
-//        smatch m;
-//
-//        if ( regex_match(line, m, duosample) ) {
-//            //cout << "found duo sample" << endl;
-//            string time(m[1].first, m[1].second);
-//            string xl(m[2].first, m[2].second);
-//            string yl(m[3].first, m[3].second);
-//            string pl(m[4].first, m[4].second);
-//            string xr(m[5].first, m[5].second);
-//            string yr(m[6].first, m[6].second);
-//            string pr(m[7].first, m[7].second);
-//            plog->addEntry( EntryPtr(
-//                        new PGazeEntry(LGAZE,
-//                                      atof(time.c_str()),
-//                                      atof(xl.c_str()),
-//                                      atof(yl.c_str()),
-//                                      atof(pl.c_str())
-//                                      )
-//                        )
-//                    );
-//            plog->addEntry( EntryPtr(
-//                        new PGazeEntry(RGAZE,
-//                                      atof(time.c_str()),
-//                                      atof(xr.c_str()),
-//                                      atof(yr.c_str()),
-//                                      atof(pr.c_str())
-//                                      )
-//                        )
-//                    );
-//            continue;
-//        }
-//        if ( regex_match(line, m, monosample) ) {
-//            //cout << "found mono sample" << endl;
-//            string time(m[1].first, m[1].second);
-//            string x(m[2].first, m[2].second);
-//            string y(m[3].first, m[3].second);
-//            string p(m[4].first, m[4].second);
-//            plog->addEntry(
-//                    EntryPtr(
-//                        new PGazeEntry(isleft ? LGAZE : RGAZE,
-//                                      atof(time.c_str()),
-//                                      atof(x.c_str()),
-//                                      atof(y.c_str()),
-//                                      atof(p.c_str())
-//                                      )
-//                        )
-//                    );
-//            continue;
-//        }
-//        if (regex_match(line, m, endfix)) {
-//            //cout << "found efix" << endl;
-//            string eye(m[1].first, m[1].second);
-//            string fixstart(m[2].first, m[2].second);
-//            string duration(m[4].first, m[4].second);
-//            string x (m[5].first, m[5].second);
-//            string y (m[6].first, m[6].second);
-//
-//            plog->addEntry(
-//                    EntryPtr(
-//                        new PFixationEntry( eye == "L" ? LFIX : RFIX,
-//                                           atof(fixstart.c_str()),
-//                                           atof(duration.c_str()),
-//                                           atof(x.c_str()),
-//                                           atof(y.c_str())
-//                                           )
-//                        )
-//                    );
-//
-//            continue;
-//        }
-//        if ( regex_match(line, m, msg) ) {
-//            //cout << "found msg" << endl;
-//            string message (m[1].first, m[1].second);
-//            string time(m[2].first, m[2].second);
-//            double t = atof(time.c_str());
-//            plog->addEntry( EntryPtr(new PMessageEntry(t, message)) );
-//            continue;                    
-//        }
-//        if ( regex_match(line, m, sampleformat) ){
-//            //cout << "found sampleformat" << endl;
-//            string lr (m[1].first, m[1].second);
-//            std::transform (lr.begin(), lr.end(), lr.begin(), ::tolower);
-//            isleft = lr == "right" ? false : true;
-//            continue;
-//        }
-//    }
-//    return result;
-//}
 
 bool is_a_digit(const string& token)
 {

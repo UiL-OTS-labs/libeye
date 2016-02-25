@@ -2,12 +2,16 @@
 # source files to build the library.
 set (LOG_SOURCES
         PEyeLog.cpp
+        PEyeLogEntry.cpp
+        PCoordinate.cpp
         cEyeLog.cpp
         )
 
 # headers to build the library
 set (LOG_HEADERS
         PEyeLog.h
+        PEyeLogEntry.h
+        PCoordinate.h
         cEyeLog.h
         )
 
