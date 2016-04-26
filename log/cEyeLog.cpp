@@ -28,8 +28,8 @@
 #include <string>
 
 /*
-* Silence MS VC++ about strdup not being part of ISO C++ it will remain valid POSIX C
-*/
+ * Silence MS VC++ about strdup not being part of ISO C++ it will remain valid POSIX C
+ */
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
 #  define strdup _strdup
 #endif
@@ -100,6 +100,46 @@ char* eyelog_entry_to_string(const eyelog_entry* e)
 {
     assert(e);
     return strdup(reinterpret_cast<const PEyeLogEntry*>(e)->toString().c_str());
+}
+
+int eyelog_entry_compare(const eyelog_entry* e1, const eyelog_entry* e2)
+{
+    assert(e1 && e2);
+    const PEyeLogEntry* entry1 = reinterpret_cast<const PEyeLogEntry*>(e1);
+    const PEyeLogEntry* entry2 = reinterpret_cast<const PEyeLogEntry*>(e2);
+    return entry1->compare(*entry2);
+}
+
+int eyelog_entry_lt(const eyelog_entry* e1, const eyelog_entry* e2)
+{
+    assert(e1 && e2);
+    const PEyeLogEntry* entry1 = reinterpret_cast<const PEyeLogEntry*>(e1);
+    const PEyeLogEntry* entry2 = reinterpret_cast<const PEyeLogEntry*>(e2);
+    return *entry1 < *entry2 ? 1 : 0;
+}
+
+int eyelog_entry_gt(const eyelog_entry* e1, const eyelog_entry* e2)
+{
+    assert(e1 && e2);
+    const PEyeLogEntry* entry1 = reinterpret_cast<const PEyeLogEntry*>(e1);
+    const PEyeLogEntry* entry2 = reinterpret_cast<const PEyeLogEntry*>(e2);
+    return *entry1 > *entry2 ? 1 : 0;
+}
+
+int eyelog_entry_eq(const eyelog_entry* e1, const eyelog_entry* e2)
+{
+    assert(e1 && e2);
+    const PEyeLogEntry* entry1 = reinterpret_cast<const PEyeLogEntry*>(e1);
+    const PEyeLogEntry* entry2 = reinterpret_cast<const PEyeLogEntry*>(e2);
+    return *entry1 == *entry2 ? 1 : 0;
+}
+
+int eyelog_entry_ne(const eyelog_entry* e1, const eyelog_entry* e2)
+{
+    assert(e1 && e2);
+    const PEyeLogEntry* entry1 = reinterpret_cast<const PEyeLogEntry*>(e1);
+    const PEyeLogEntry* entry2 = reinterpret_cast<const PEyeLogEntry*>(e2);
+    return *entry1 != *entry2 ? 1 : 0;
 }
 
 void eyelog_entry_set_separator(eyelog_entry*e, char c)
@@ -401,6 +441,79 @@ void saccade_entry_set_coordinate2(saccade_entry* s, coordinate* c)
             *reinterpret_cast<PCoordinate*>(c)
             );
 }
+
+
+trial_entry* trial_entry_new(double time, const char* identifier, const char* group)
+{
+    trial_entry* r = NULL;
+    try {
+        r = reinterpret_cast<trial_entry*>(
+                new PTrialEntry(time, identifier, group)
+                );
+    } catch(...) {
+    }
+    return r;
+}
+
+char* trial_entry_get_identifier(const trial_entry* t)
+{
+    assert(t);
+    return strdup(reinterpret_cast<const PTrialEntry*>(t)->getIdentifier().c_str());
+}
+
+char* trial_entry_get_group(const trial_entry* t)
+{
+    assert(t);
+    return strdup(reinterpret_cast<const PTrialEntry*>(t)->getGroup().c_str());
+}
+
+void trial_entry_set_identifier(trial_entry* t, const char* identifier)
+{
+    assert(t && identifier);
+    try {
+        std::string i(identifier);
+        reinterpret_cast<PTrialEntry*>(t)->setIdentifier(i);
+    }
+    catch(...) {
+        // improve error handeling like std::bad_alloc
+    }
+}
+
+void trial_entry_set_group(trial_entry* t, const char* group)
+{
+    assert(t && group);
+    try {
+        std::string g(group);
+        reinterpret_cast<PTrialEntry*>(t)->setGroup(g);
+    }
+    catch(...) {
+        // improve error handeling like std::bad_alloc
+    }
+}
+
+trial_start_entry* trial_start_entry_new(double time)
+{
+    trial_start_entry* r = NULL;
+    try {
+        r = reinterpret_cast<trial_start_entry*> (new PTrialStartEntry(time));
+    }
+    catch (...) {
+    }
+    return r;
+}
+
+trial_end_entry* trial_end_entry_new(double time)
+{
+    trial_end_entry* r = NULL;
+    try {
+        r = reinterpret_cast<trial_end_entry*> (new PTrialEndEntry(time));
+    }
+    catch (...) {
+    }
+    return r;
+}
+
+/* *** Implementation of the eyelog *** */
 
 eye_log* eye_log_new()
 {

@@ -112,7 +112,20 @@ public :
      */
     const char* getFilename() const;
 
+    /**
+     * Gets all logentries.
+     */
     const std::vector<PEyeLogEntry*>& getEntries()const;
+
+    /**
+     * Sets the logentries and optionally clear the existing.
+     *
+     * Set the logentries and make sure they are sorted on
+     * time and entrytype.
+     */
+    void setEntries(const std::vector<PEyeLogEntry*>& entries,
+                    bool clear=true
+                    );
 
 private:
 

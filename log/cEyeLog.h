@@ -49,10 +49,26 @@ extern "C" {
     EYELOG_EXPORT  void	            eyelog_entry_destroy(eyelog_entry* e);
     EYELOG_EXPORT  eyelog_entry*    eyelog_entry_clone(const eyelog_entry* other);
     EYELOG_EXPORT  char*            eyelog_entry_to_string(const eyelog_entry* e);
+    EYELOG_EXPORT  int              eyelog_entry_compare(const eyelog_entry* e1,
+                                                         const eyelog_entry* e2
+                                                         );
+    EYELOG_EXPORT  int              eyelog_entry_lt(const eyelog_entry* e1,
+                                                    const eyelog_entry* e2
+                                                    );
+    EYELOG_EXPORT  int              eyelog_entry_gt(const eyelog_entry* e1,
+                                                    const eyelog_entry* e2
+                                                    );
+    EYELOG_EXPORT  int              eyelog_entry_eq(const eyelog_entry* e1,
+                                                    const eyelog_entry* e2
+                                                    );
+    EYELOG_EXPORT  int              eyelog_entry_ne(const eyelog_entry* e1,
+                                                    const eyelog_entry* e2
+                                                    );
     EYELOG_EXPORT  void             eyelog_entry_set_separator(eyelog_entry* e, char c);
     EYELOG_EXPORT  char             eyelog_entry_get_separator(const eyelog_entry* e);
     EYELOG_EXPORT  void             eyelog_entry_set_precision(eyelog_entry* e,
-                                           unsigned precision);
+                                                               unsigned precision
+                                                               );
     EYELOG_EXPORT  unsigned         eyelog_entry_get_precision(const eyelog_entry* e);
 
     /*Wrappers to PEyelog*/
@@ -114,6 +130,26 @@ extern "C" {
                                                                  const coordinate* c);
     EYELOG_EXPORT  void             saccade_entry_set_duration(const saccade_entry* f,
                                                                double time);
+    
+    /*Wrapper to PTrialEntry*/
+    typedef struct trial_entry{} trial_entry;
+    EYELOG_EXPORT  trial_entry*     trial_entry_new(double time, const char* identifier,
+                                                    const char* group);
+    EYELOG_EXPORT  char*            trial_entry_get_identifier(const trial_entry* t);
+    EYELOG_EXPORT  char*            trial_entry_get_group(const trial_entry* t);
+    EYELOG_EXPORT  void             trial_entry_set_identifier(trial_entry* t,
+                                                               const char* identifier);
+    EYELOG_EXPORT  void             trial_entry_set_group(trial_entry* t, const char* group);
+
+    /*Wrapper to PTrialStartEntry*/
+    typedef struct trial_start_entry{} trial_start_entry;
+
+    EYELOG_EXPORT  trial_start_entry* trial_start_entry_new(double time);
+
+    /*Wrapper to PTrialEndEntry*/
+    typedef struct trial_end_entry{} trial_end_entry;
+
+    EYELOG_EXPORT  trial_end_entry*  trial_end_entry_new(double time);
 
     /*Wrapper to PEyeLog*/
     typedef struct eye_log{} eye_log;

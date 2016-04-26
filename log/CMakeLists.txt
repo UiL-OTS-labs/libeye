@@ -11,6 +11,7 @@ set (EYELOG_STATIC_LIB
 set (LOG_SOURCES
         PEyeLog.cpp
         PEyeLogEntry.cpp
+        PExperiment.cpp
         PCoordinate.cpp
         cEyeLog.cpp
         cError.cpp
@@ -20,6 +21,7 @@ set (LOG_SOURCES
 set (LOG_HEADERS
         PEyeLog.h
         PEyeLogEntry.h
+        PExperiment.h
         PCoordinate.h
         cEyeLog.h
         cError.h
