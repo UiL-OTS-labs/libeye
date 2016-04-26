@@ -46,6 +46,7 @@ class EyeLogEntry {
         {
             mentry = eyelog_entry_clone(other.mentry);
         }
+
         EyeLogEntry(eyelog_entry* e)
             : mentry(e)
         {
@@ -85,6 +86,31 @@ class EyeLogEntry {
             } else {
                 throw std::bad_alloc();
             }
+        }
+
+        int compare(const EyeLogEntry& other) const
+        {
+            return eyelog_entry_compare(mentry, other.mentry);
+        }
+
+        bool operator<(const EyeLogEntry& other) const
+        {
+            return bool(eyelog_entry_lt(mentry, other.mentry));
+        }
+
+        bool operator>(const EyeLogEntry& other) const
+        {
+            return bool(eyelog_entry_gt(mentry, other.mentry));
+        }
+
+        bool operator==(const EyeLogEntry& other) const
+        {
+            return bool(eyelog_entry_eq(mentry, other.mentry));
+        }
+
+        bool operator!=(const EyeLogEntry& other) const
+        {
+            return bool(eyelog_entry_ne(mentry, other.mentry));
         }
 
     protected:
@@ -337,6 +363,96 @@ class SaccadeEntry : public EyeLogEntry {
         const saccade_entry* getSelfConst()const
         {
             return reinterpret_cast<saccade_entry*>(mentry);
+        }
+};
+
+class TrialEntry : public EyeLogEntry {
+    
+    public:
+
+        TrialEntry(double time,
+                   const std::string& identifier,
+                   const std::string& group)
+            : EyeLogEntry (
+                    reinterpret_cast<eyelog_entry*>(trial_entry_new(
+                            time,
+                            identifier.c_str(),
+                            group.c_str()
+                            )
+                        )
+                    )
+        {
+        }
+
+        void setIdentifier(const std::string& identifier)
+        {
+            trial_entry* self = getSelf();
+            trial_entry_set_identifier(self, identifier.c_str());
+        }
+
+        void setGroup(const std::string& group)
+        {
+            trial_entry* self = getSelf();
+            trial_entry_set_group(self, group.c_str());
+        }
+
+        std::string getIdentifier()const
+        {
+            const trial_entry* self = getSelfConst();
+            std::shared_ptr<char> i(trial_entry_get_identifier(self), free);
+            if (i)
+                return std::string(i.get());
+            throw std::bad_alloc();
+        }
+        
+        std::string getGroup()const
+        {
+            const trial_entry* self = getSelfConst();
+            std::shared_ptr<char> i(trial_entry_get_identifier(self), free);
+            if (i)
+                return std::string(i.get());
+            throw std::bad_alloc();
+        }
+
+    private:
+
+        trial_entry* getSelf()
+        {
+            return reinterpret_cast<trial_entry*>(mentry);
+        }
+        
+        trial_entry* getSelfConst() const
+        {
+            return reinterpret_cast<trial_entry*>(mentry);
+        }
+
+};
+
+class TrialStartEntry : public EyeLogEntry {
+    
+    public:
+
+        TrialStartEntry(double time)
+            : EyeLogEntry (
+                    reinterpret_cast<eyelog_entry*>(
+                        trial_start_entry_new(time)
+                            )
+                        )
+        {
+        }
+};
+
+class TrialEndEntry : public EyeLogEntry {
+    
+    public:
+
+        TrialEndEntry(double time)
+            : EyeLogEntry (
+                    reinterpret_cast<eyelog_entry*>(
+                        trial_end_entry_new(time)
+                            )
+                        )
+        {
         }
 };
 

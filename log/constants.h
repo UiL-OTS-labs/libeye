@@ -25,24 +25,35 @@
 
 /**
  * entrytype define with what kind of log entry we are dealing with.
+ *
+ * Note the order of the entries in the entrytype enum greatly affect
+ * how the files are saved and restored. Therefore only add members to
+ * the back and reordering the enumeration is only allowed in a
+ * new major revision of libeye.
  */
 enum entrytype {
-    LGAZE,
-    RGAZE,
-    LFIX,
-    RFIX,
-    STIMULUS,
-    MESSAGE,
-    LSAC,
-    RSAC
+    LGAZE,      //!< Left gaze sample.
+    RGAZE,      //!< Right gaze sample.
+    LFIX,       //!< Left eye fixation.
+    RFIX,       //!< Right eye fixation.
+    STIMULUS,   //!< Filename of the stimulus.
+    MESSAGE,    //!< A user defined message.
+    LSAC,       //!< A saccade of the left eye.
+    RSAC,       //!< A saccade of the right eye.
+    AVGGAZE,    //!< A gaze sample of the position between the left and right eye.
+    AVGFIX,     //!< A fixation of the average gaze samples.
+    AVGSAC,     //!< A saccade of the average gaze sample.
+    TRIAL,      //!< A new trial
+    TRIALSTART, //!< Ignore data before TRIALSTART in trial
+    TRIALEND    //!< Ignore data after TRIALEND in trial
 };
 
 /**
  * eyelog_format
  */
 enum eyelog_format {
-    FORMAT_BINARY,
-    FORMAT_CSV
+    FORMAT_BINARY,  //!< Used when writing a binary version of the log
+    FORMAT_CSV      //!< Used when writing a CSV version of the log
 };
 
 #endif

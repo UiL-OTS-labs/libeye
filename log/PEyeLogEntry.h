@@ -23,6 +23,7 @@
 #define PEYELOGENTRY_H
 
 #include <string>
+#include <vector>
 #include <fstream>
 #include "constants.h"
 #include "PCoordinate.h"
@@ -35,6 +36,21 @@ class PFixationEntry;
 class PMessageEntry;
 class PSaccadeEntry;
 class PStimulusEntry;
+class PTrialEntry;
+
+typedef PEyeLogEntry* PEntryPtr;
+typedef std::vector<PEntryPtr> PEntryVec;
+
+/**
+ * copy a vector with PEntryPtr.
+ */
+PEntryVec copyPEntryVec(const PEntryVec& entries);
+
+/**
+ * destroys the contents of a vector with PEntryPtr, the vector self 
+ * remains intact.
+ */
+void destroyPEntyVec(PEntryVec& entries);
 
 class PEyeLogEntry {
 
@@ -48,10 +64,60 @@ public :
      */
     virtual PEyeLogEntry* clone() const =0;
 
+    /**
+     * \returns a PEyeLogEntry in string form.
+     */
     virtual std::string toString()const = 0;
+    
+    /**
+     * Write this entry to a ofstream.
+     *
+     * Create a binary representation of this entry in a stream.
+     * \param stream a opened stream.
+     * \return 0 if succesful, or an int otherwise.
+     */
     virtual int writeBinary(std::ofstream& stream)const;
 
+    /**
+     * compares this to another PEyeLogEntry
+     *
+     * Compares this entry to another entry. This
+     * method sorts on time firstly, on entry type
+     * secondly and if that doesn't resolve it
+     * it calls the compare of an derived class.
+     * The comparisons haven't allway got a true
+     * mathematical meaning, but this function is 
+     * mainly intended for sorting purposes.
+     * 
+     * \param other a PLogEntry to compare with.
+     *
+     * \return an integer smaller than, equal to or larger than
+     * zero for respectively an item if the item
+     * is smaller, equal to or larger than the other
+     */
+    virtual int compare(const PEyeLogEntry& other)const;
+
+    bool operator <  (const PEyeLogEntry& rhs)const;
+    bool operator >  (const PEyeLogEntry& rhs)const;
+    bool operator == (const PEyeLogEntry& rhs)const;
+    bool operator != (const PEyeLogEntry& rhs)const;
+    // easy to implement but doesn't really make sense
+    // because the only reason that these operators exist
+    // is sorting and object equality.
+    //bool operator <= (const PEyeLogEntry& rhs)const;
+    //bool operator >= (const PEyeLogEntry& rhs)const;
+
+    /**
+     * set the separator between field in a csv log.
+     * 
+     * This sets the separator used between the fields in a csv log
+     * \note the separator may not be present in an string.
+     */
     static void setSeparator(const std::string& c);
+
+    /**
+     * Get the current separator.
+     */
     static std::string getSeparator();
 
     /**
@@ -65,8 +131,6 @@ public :
      * \return the precision.
      */
     static unsigned getPrecision();
-
-//protected :
 
     /**
      * Obtains the type of item.
@@ -89,6 +153,7 @@ protected :
 };
 
 class PGazeEntry : public PEyeLogEntry {
+    friend class PEyeLogEntry;
 
 public :
 
@@ -109,6 +174,7 @@ public :
      * @param stream a opened ofstream for binary data.
      */
     virtual int writeBinary(std::ofstream& stream) const;
+
 
     /**
      * returns the x coordinate
@@ -151,6 +217,10 @@ public :
     void setPupil(float pupsize);
 
 private :
+    /**
+     * only compares the members in PGazeEntry
+     */
+    virtual int compare(const PGazeEntry& other)const;
 
     float m_x;
     float m_y;
@@ -164,6 +234,7 @@ private :
  * and its location.
  */
 class PFixationEntry : public PEyeLogEntry {
+    friend class PEyeLogEntry;
 
 public:
 
@@ -193,6 +264,11 @@ public:
     void setDuration(double dur);
 
 private:
+    
+    /**
+     * this compares only the members in PFixationEntry
+     */
+    virtual int compare(const PFixationEntry& other) const;
 
     double  m_dur;     // the duration of the fixation
     float   m_x;       
@@ -203,6 +279,7 @@ private:
  * This allows for logging custom messages
  */
 class PMessageEntry : public PEyeLogEntry {
+    friend class PEyeLogEntry;
 
 public :
     PMessageEntry (double eyetime, const std::string& Message);
@@ -218,11 +295,16 @@ public :
     void setMessage(const std::string& message);
 
 private:
+    /**
+     * this only compares the members in PMessageEntry
+     */
+    virtual int compare(const PMessageEntry& other)const;
 
     std::string  m_message;
 };
 
 class PSaccadeEntry : public PEyeLogEntry {
+    friend class PEyeLogEntry;
 
 public:
 
@@ -261,6 +343,11 @@ public:
     void setDuration(double dur);
 
 private:
+    
+    /**
+     * This only compares members of PSaccadeEntry
+     */
+    virtual int compare(const PSaccadeEntry& other)const;
 
     double  m_dur;     // the duration of the saccade
     float   m_x1;
@@ -269,7 +356,99 @@ private:
     float   m_y2;
 };
 
+class PTrialEntry : public PEyeLogEntry
+{
+    friend class PEyeLogEntry;
+public:
+    /**
+     * Create a PTrialEntry instance
+     */
+    PTrialEntry(double time,
+                const std::string& identifier,
+                const std::string& group
+                );
+    
+    virtual std::string toString()const;
+    virtual PEntryPtr clone()const;
+    virtual int writeBinary(std::ofstream& stream)const;
 
+    /**
+     * Sets the trial identifier.
+     *
+     * Sets the trial identifier.
+     * \param identifier an identifier.
+     */
+    void setIdentifier(const std::string& identifier);
+
+    /**
+     * Sets the trial group.
+     *
+     * Sets the trial group.
+     * \param group a group.
+     */
+    void setGroup(const std::string& group);
+    
+    /**
+     * get the trial identifier
+     */
+    std::string getIdentifier()const;
+    
+    /**
+     * get the group identifier
+     */
+    std::string getGroup()const;
+
+private:
+    /**
+     * This only compares members of the PTrialEntry
+     */
+    virtual int compare(const PTrialEntry& other) const;
+
+    std::string m_identifier;
+    std::string m_group;
+};
+
+/**
+ * Marks a start of trial in a logfile
+ */
+class PTrialStartEntry : public PEyeLogEntry
+{
+    friend class PEyeLogEntry;
+public:
+    /**
+     * Create a PTrialStartEntry instance
+     */
+    PTrialStartEntry(double time);
+
+    virtual std::string toString()const;
+    virtual PEntryPtr clone()const;
+private:
+    /**
+     * returns 0 
+     */
+    virtual int compare(const PTrialStartEntry& other)const;
+};
+
+/**
+ * Marks an end of trial in a logfile
+ */
+class PTrialEndEntry : public PEyeLogEntry
+{
+    friend class PEyeLogEntry;
+public:
+    /**
+     * Create a PTrialEndEntry instance
+     */
+    PTrialEndEntry(double time);
+    
+    virtual std::string toString()const;
+    virtual PEntryPtr clone()const;
+private:
+    /**
+     * returns 0.
+     */
+    virtual int compare(const PTrialEndEntry& other)const;
+};
 
 #endif
 

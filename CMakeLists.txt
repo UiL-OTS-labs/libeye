@@ -33,6 +33,7 @@ endif()
 
 # setting of general options
 option(BUILD_BINARIES "Build utilities that uses the library" ON)
+option(BUILD_UNIT_TESTS "Build unit tests" ON)
 
 # creation of a configure file
 configure_file(
@@ -60,6 +61,10 @@ add_subdirectory(bindings)
 if (BUILD_BINARIES)
     add_subdirectory(bin)
 endif(BUILD_BINARIES)
+
+if (BUILD_UNIT_TESTS)
+    add_subdirectory(tests)
+endif(BUILD_UNIT_TESTS)
 
 include (InstallRequiredSystemLibraries)
 set (CPACK_RESOURCE_FILE_LICENCE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")

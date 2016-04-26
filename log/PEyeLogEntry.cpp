@@ -26,8 +26,26 @@
 
 using namespace std;
 
+/* ** utility functions * **/
 
-/*** PEyeLogEntry ***/
+PEntryVec copyPEntryVec(const PEntryVec& entries)
+{
+    PEntryVec out(entries.size());
+    auto input = entries.begin();
+    auto output = out.begin();
+    while (input < entries.end())
+        *output++ = *input++;
+    return out;
+}
+
+void destroyPEntyVec(PEntryVec& entries)
+{
+    for (auto i = 0u; i < entries.size(); i++)
+        delete entries[i];
+}
+
+
+/* ** PEyeLogEntry * **/
 
 string PEyeLogEntry::m_sep = "\t";
 
@@ -73,6 +91,76 @@ int PEyeLogEntry::writeBinary(ofstream& stream) const
     if (!stream.write(reinterpret_cast<const char*>(&time), sizeof(time)))
         return errno;
     return 0;
+}
+
+#define HANDLE_DERIVED_COMPARE(entryclass)\
+    {\
+        const entryclass* self = static_cast<const entryclass*>(this);\
+        return self->compare(*static_cast<const entryclass*>(&other));\
+    }\
+
+int PEyeLogEntry::compare(const PEyeLogEntry& other) const {
+    int diff;
+    double diff_float = getTime() - other.getTime();
+
+    // allow difference of 1 nano second (getTime returns ms)
+    if      (diff_float < -1e-6)
+        return -1;
+    else if (diff_float >  1e-6)
+        return 1;
+
+    diff = getEntryType() - other.getEntryType();
+    if (diff)
+        return diff;
+
+    switch (getEntryType()) {
+        case LGAZE:
+        case RGAZE:
+        case AVGGAZE:
+            HANDLE_DERIVED_COMPARE(PGazeEntry)
+        case LFIX:
+        case RFIX:
+        case AVGFIX:
+             HANDLE_DERIVED_COMPARE(PFixationEntry)
+        case LSAC:
+        case RSAC:
+        case AVGSAC:
+             HANDLE_DERIVED_COMPARE(PSaccadeEntry)
+//        case STIMULUS:
+//             HANDLE_DERIVED_COMPARE(PStimulusEntry)
+        case MESSAGE:
+             HANDLE_DERIVED_COMPARE(PMessageEntry)
+        case TRIAL:
+             HANDLE_DERIVED_COMPARE(PTrialEntry)
+        case TRIALSTART:
+             HANDLE_DERIVED_COMPARE(PTrialStartEntry)
+        case TRIALEND:
+             HANDLE_DERIVED_COMPARE(PTrialEndEntry)
+        default:
+            assert(false); // unknown entry type.
+            return -1;
+    }
+}
+#undef HANDLE_DERIVED_COMPARE
+
+bool PEyeLogEntry::operator<(const PEyeLogEntry& other) const
+{
+    return compare(other) < 0;
+}
+
+bool PEyeLogEntry::operator>(const PEyeLogEntry& other) const
+{
+    return compare(other) > 0;
+}
+
+bool PEyeLogEntry::operator==(const PEyeLogEntry& other) const
+{
+    return compare(other) == 0;
+}
+
+bool PEyeLogEntry::operator!=(const PEyeLogEntry& other) const
+{
+    return compare(other) != 0;
 }
 
 /*** PGazeEntry ***/
@@ -131,6 +219,21 @@ int PGazeEntry::writeBinary(ofstream& stream)const
     if (!stream.write(reinterpret_cast<const char*>(&m_pupil), sizeof(m_pupil)))
         return errno;
     return ret;
+}
+
+int PGazeEntry::compare(const PGazeEntry& other) const
+{
+    float diff;
+    diff = m_x - other.m_x;
+    if (bool(diff))
+        return diff < 0 ? -1 : 1;
+    diff = m_y - other.m_y;
+    if (bool(diff))
+        return diff < 0 ? -1 : 1;
+    diff = m_pupil - other.m_pupil;
+    if (bool(diff))
+        return diff < 0 ? -1 : 1;
+    return 0;
 }
 
 float PGazeEntry::getX() const
@@ -212,7 +315,7 @@ string PFixationEntry::toString() const
               getTime() << sep <<
               m_dur << sep <<
               m_x << sep <<
-              m_y << sep;
+              m_y;
 
     return stream.str();
 }
@@ -230,6 +333,23 @@ int PFixationEntry::writeBinary(ofstream& stream) const
         return errno;
             
     return ret;
+}
+
+int PFixationEntry::compare(const PFixationEntry& other)const
+{
+    float diff;
+    diff = m_dur - other.m_dur;
+    if (bool(diff))
+        return diff < 0 ? -1 : 1;
+
+    diff = m_x - other.m_x;
+    if (bool(diff))
+        return diff < 0 ? -1 : 1;
+    
+    diff = m_y - other.m_y;
+    if (bool(diff))
+        return diff < 0 ? -1 : 1;
+    return 0;
 }
 
 float PFixationEntry::getX()const
@@ -274,8 +394,8 @@ void PFixationEntry::setDuration(double dur)
 }
 
 PMessageEntry::PMessageEntry(double time,
-                           const string& msg
-                           )
+                             const string& msg
+                             )
     : PEyeLogEntry(MESSAGE, time),
       m_message(msg)
 {
@@ -319,6 +439,16 @@ int PMessageEntry::writeBinary(ofstream& stream) const
         return errno;
             
     return ret;
+}
+
+int PMessageEntry::compare(const PMessageEntry& other)const
+{
+    if (m_message < other.m_message)
+        return -1;
+    else if(m_message > other.m_message)
+        return 1;
+    else
+        return 0;
 }
 
 string PMessageEntry::getMessage() const
@@ -377,7 +507,7 @@ string PSaccadeEntry::toString() const
               m_x1 << sep <<
               m_y1 << sep <<
               m_x2 << sep <<
-              m_y2 << sep;
+              m_y2;
 
     return stream.str();
 }
@@ -400,6 +530,32 @@ int PSaccadeEntry::writeBinary(ofstream& stream) const
         return errno;
 
     return ret;
+}
+
+int PSaccadeEntry::compare(const PSaccadeEntry& other)const
+{
+    float diff;
+
+    diff = m_dur - other.m_dur;
+    if (bool(diff))
+        return diff < 0 ? -1 : 1;
+
+    diff = m_x1 - other.m_x1;
+    if (bool(diff))
+        return diff < 0 ? -1 : 1;
+
+    diff = m_y1 - other.m_y1;
+    if (bool(diff))
+        return diff < 0 ? -1 : 1;
+
+    diff = m_x2 - other.m_x2;
+    if (bool(diff))
+        return diff < 0 ? -1 : 1;
+
+    diff = m_y2 - other.m_y2;
+    if (bool(diff))
+        return diff < 0 ? -1 : 1;
+    return 0;
 }
 
 float PSaccadeEntry::getX1()const
@@ -474,3 +630,151 @@ void PSaccadeEntry::setDuration(double time)
     m_dur = time;
 }
 
+
+PTrialEntry::PTrialEntry(double time,
+                         const std::string& identifier,
+                         const std::string& group
+                         )
+    : PEyeLogEntry(TRIAL, time),
+      m_identifier(identifier),
+      m_group(group)
+{
+}
+
+void PTrialEntry::setIdentifier(const std::string& identifier)
+{
+    m_identifier = identifier;
+}
+
+void PTrialEntry::setGroup(const string& group)
+{
+    m_group = group;
+}
+
+string PTrialEntry::getIdentifier()const
+{
+    return m_identifier;
+}
+
+string PTrialEntry::getGroup()const
+{
+    return m_group;
+}
+
+string PTrialEntry::toString()const
+{
+    stringstream stream;
+    stream.setf(ios::fixed);
+    stream.precision(m_precision);
+    const string sep(getSeparator());
+
+    stream << int(getEntryType()) << sep <<
+              getTime()           << sep <<
+              m_identifier        << sep <<
+              m_group;
+
+    return stream.str();
+}
+
+PEntryPtr PTrialEntry::clone()const
+{
+    return new PTrialEntry(*this);
+}
+
+int PTrialEntry::writeBinary(ofstream& stream) const
+{
+    int ret;
+    uint32_t identifier_size = m_identifier.size();
+    uint32_t group_size = m_group.size();
+
+    if ((ret = PEyeLogEntry::writeBinary(stream)) != 0)
+        return ret;
+
+    if (!stream.write( reinterpret_cast<const char*>(&identifier_size),
+                       sizeof(identifier_size))
+            )
+        return errno;
+    if (!stream.write(m_identifier.c_str(), identifier_size))
+        return errno;
+    if (!stream.write( reinterpret_cast<const char*>(&group_size),
+                       sizeof(group_size))
+            )
+        return errno;
+    if (!stream.write(m_group.c_str(), group_size))
+        return errno;
+            
+    return ret;
+}
+
+int PTrialEntry::compare(const PTrialEntry& other) const
+{
+    if (m_identifier < other.m_identifier)
+        return -1;
+    else if (m_identifier > other.m_identifier)
+        return 1;
+
+    if (m_group < other.m_group)
+        return -1;
+    else if(m_group > other.m_group)
+        return 1;
+    else
+        return 0;
+}
+
+PTrialStartEntry::PTrialStartEntry(double time)
+    : PEyeLogEntry(TRIALSTART, time)
+{
+}
+
+std::string PTrialStartEntry::toString() const
+{
+    stringstream stream;
+    stream.setf(ios::fixed);
+    stream.precision(m_precision);
+    const string sep(getSeparator());
+
+    stream << int(getEntryType()) << sep <<
+              getTime();
+
+    return stream.str();
+}
+
+int PTrialStartEntry::compare(const PTrialStartEntry& other) const
+{
+    (void) other;
+    return 0;
+}
+
+PEntryPtr PTrialStartEntry::clone() const
+{
+    return new PTrialStartEntry(*this);
+}
+
+PTrialEndEntry::PTrialEndEntry(double time)
+    : PEyeLogEntry(TRIALEND, time)
+{
+}
+
+std::string PTrialEndEntry::toString() const
+{
+    stringstream stream;
+    stream.setf(ios::fixed);
+    stream.precision(m_precision);
+    const string sep(getSeparator());
+
+    stream << int(getEntryType()) << sep <<
+              getTime();
+
+    return stream.str();
+}
+
+int PTrialEndEntry::compare(const PTrialEndEntry& other) const
+{
+    (void) other;
+    return 0;
+}
+
+PEntryPtr PTrialEndEntry::clone() const
+{
+    return new PTrialEndEntry(*this);
+}
