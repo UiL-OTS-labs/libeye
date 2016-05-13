@@ -28,6 +28,11 @@ PTrial::PTrial(const PTrialEntry* entry)
 {
 }
 
+PTrial::PTrial(const PTrialEntry& entry)
+    : m_entry(entry)
+{
+}
+
 PTrial::~PTrial()
 {
 }
@@ -42,6 +47,26 @@ void PTrial::addEntry(const PEntryPtr entry)
     m_entries[t].push_back(entry->clone());
 }
 
+const std::vector<PEyeLogEntry*>& PTrial::operator[](entrytype t) const
+{
+    const static PEntryVec empty; // empty return value.
+    const auto it = m_entries.find(t);
+    if (it != m_entries.end())
+        return it->second;
+    else
+        return empty;
+}
+
+PEntryVec PTrial::getEntries() const
+{
+    PEntryVec vec;
+    vec.push_back(m_entry.clone());
+    for (const auto& pair : m_entries)
+        for (const auto* entry: pair.second)
+            vec.push_back(entry->clone());
+    return vec;
+}
+
 void PTrial::clear() 
 {
     for(auto& pair: m_entries) {
@@ -51,13 +76,20 @@ void PTrial::clear()
     m_entries.clear();
 }
 
+/*
+ * Compares fist on m_entry, than it compares the m_entries map
+ */
 bool PTrial::operator==(const PTrial& other) const
 {
+    if (m_entry != other.m_entry)
+        return false;
+
     if (m_entries.size() != other.m_entries.size())
         return false;
 
     auto it1 = m_entries.cbegin();
     auto it2 = other.m_entries.cbegin();
+    /* Compare keys and then deep compare the pointers of the logentries */
     for (; it1 != m_entries.end(); it1++, it2++) {
         if (it1->first != it2->first)
             return false;
@@ -70,6 +102,11 @@ bool PTrial::operator==(const PTrial& other) const
                 return false;
     }
     return true;
+}
+
+bool PTrial::operator!=(const PTrial& other) const 
+{
+    return ! (*this == other);
 }
 
 std::string PTrial::getIdentifier() const
@@ -87,6 +124,16 @@ PExperiment::PExperiment()
 }
 
 PExperiment::PExperiment(const std::vector<PEyeLogEntry*>& entries)
+{
+    initFromEntryVec(entries);
+}
+
+PExperiment::PExperiment(const PEyeLog& log)
+{
+    initFromEntryVec(log.getEntries());
+}
+
+void PExperiment::initFromEntryVec(const PEntryVec& entries)
 {
     // Used to indicate trial end.
     bool end(false);
@@ -117,6 +164,7 @@ PExperiment::PExperiment(const std::vector<PEyeLogEntry*>& entries)
     }
 }
 
+
 bool PExperiment::operator==(const PExperiment& rhs) const
 {
     if (m_metadata.size() == rhs.m_metadata.size())
@@ -137,8 +185,11 @@ unsigned PExperiment::nTrials()const
     return m_trials.size();
 }
 
-PEyeLog PExperiment::getLog()const
+void PExperiment::getLog(PEyeLog& log, bool append)const
 {
-    //TODO
-    assert(false);
+    if (!append)
+        log.clear();
+    log.setEntries(m_metadata, false);
+    for (const auto& trial : m_trials)
+        log.setEntries(copyPEntryVec(trial.getEntries()), false);
 }

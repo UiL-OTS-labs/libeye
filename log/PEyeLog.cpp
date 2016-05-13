@@ -166,6 +166,13 @@ void PEyeLog::addEntry(PEyeLogEntry* p)
     m_entries.push_back(p);
 }
 
+void PEyeLog::setEntries(const PEntryVec& entries, bool empty)
+{
+    if (empty)
+        clear();
+    m_entries = entries;
+}
+
 int PEyeLog::read(const string& file, bool clear_content)
 {
     if (clear_content)

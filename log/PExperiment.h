@@ -31,6 +31,7 @@ class PTrial {
     public:
 
         PTrial (const PTrialEntry* entry);
+        PTrial (const PTrialEntry& entry);
 
         virtual ~PTrial();
 
@@ -50,6 +51,13 @@ class PTrial {
          * vector.
          */
         const std::vector<PEyeLogEntry*>& operator[](entrytype type) const;
+
+        /**
+         * Returns all the entries that belong to this trial.
+         *
+         * \note the entries in the vector should be freed.
+         */
+        PEntryVec getEntries() const;
 
         /**
          * Clears all logentries.
@@ -130,19 +138,35 @@ class PExperiment {
 
         /**
          * Return the experiment in a log suitable for saving.
+         *
+         * \param output [out] The output will be initialized
+         * \param append [in]  If append is true all entries
+         *                     will be appended to the log.
+         *                     otherwise it is cleared.
          */
-        PEyeLog getLog()const;
+        void getLog(PEyeLog& output, bool append=false)const;
 
         /**
          * tells how many trials are in the experiment.
          */
         unsigned nTrials()const;
 
+        /**
+         * Gets the trial identifier
+         */
         std::string identifier()const;
 
+        /**
+         * Gets the group identifier
+         */
         std::string group()const;
     
     private:
+
+        /**
+         * initialize a PExperiment with a vector of PEyeLogEntries
+         */
+        void initFromEntryVec(const PEntryVec& entries);
 
         /**
          * Data before the first trial is considered meta data
