@@ -22,6 +22,11 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+/**
+ * \file constants.h
+ *
+ * This file contains the constants used throughout libeye.
+ */
 
 /**
  * entrytype define with what kind of log entry we are dealing with.

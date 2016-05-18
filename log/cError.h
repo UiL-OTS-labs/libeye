@@ -19,6 +19,13 @@
  * License along with this library; if not, see Licenses at www.gnu.org.
  */
 
+/**
+ * \file cError.h
+ *
+ * This file contains the api that is useful for handeling errors
+ * that can occur when using libeye.
+ */
+
 #ifndef C_ERROR_H
 #define C_ERROR_H
 
@@ -31,15 +38,21 @@
  * some logical error while using this library.
  */
 enum eyelog_error_t {
-    ERR_START = -10000,
-    ERR_INVALID_PARAMETER,
-    ERR_INVALID_FILE_FORMAT
+    ERR_START = -10000,     ///< just a arbitrairy starting point for errors.
+    ERR_INVALID_PARAMETER,  ///< The function has been given an invalid parameter value.
+    ERR_INVALID_FILE_FORMAT ///< The file format is not understood.   
 };
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/**
+ * eyelog_error is usefull to obtain information about an error that has
+ * occured while useing libeye.
+ *
+ * \returns a string that describes the error that has occured.
+ */
 EYELOG_EXPORT const char* eyelog_error(int code);
 
 #ifdef __cplusplus
