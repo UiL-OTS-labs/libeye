@@ -33,7 +33,7 @@ using namespace std;
 
 /* reading of binary gaze entries */
 
-int readBinaryGaze(ifstream& stream, PEyeLogEntry** out, entrytype et) {
+int readBinaryGaze(ifstream& stream, PEntryPtr* out, entrytype et) {
     double time;
     float x, y, pupil;
     
@@ -49,11 +49,11 @@ int readBinaryGaze(ifstream& stream, PEyeLogEntry** out, entrytype et) {
     if (!stream.read(reinterpret_cast<char*>(&pupil), sizeof(pupil)))
         return errno;
 
-    *out = new PGazeEntry(et, time, x, y, pupil);
+    *out = std::make_shared<PGazeEntry>(et, time, x, y, pupil);
     return 0;
 }
 
-int readBinaryFix(ifstream& stream, PEyeLogEntry** out, entrytype et) {
+int readBinaryFix(ifstream& stream, PEntryPtr* out, entrytype et) {
     double time;
     double duration;
     float x, y;
@@ -70,12 +70,12 @@ int readBinaryFix(ifstream& stream, PEyeLogEntry** out, entrytype et) {
     if (!stream.read( (char*)&y         , sizeof(y)))
         return errno;
 
-    *out = new PFixationEntry(et, time, duration, x, y);
+    *out = std::make_shared<PFixationEntry>(et, time, duration, x, y);
 
     return 0;
 }
 
-int readBinaryMessage(ifstream& stream, PEyeLogEntry** out) {
+int readBinaryMessage(ifstream& stream, PEntryPtr* out) {
     double time;
     uint32_t size;
     string msg;
@@ -90,12 +90,11 @@ int readBinaryMessage(ifstream& stream, PEyeLogEntry** out) {
     if (!stream.read( (char*) msg.data(), size))
         return errno;
 
-    *out = new PMessageEntry(time, msg);
-
+    *out = std::make_shared<PMessageEntry>(time, msg);
     return 0;
 }
 
-int readBinarySac(ifstream& stream, PEyeLogEntry** out, entrytype et) {
+int readBinarySac(ifstream& stream, PEntryPtr* out, entrytype et) {
     double time;
     double duration;
     float x1, y1, x2, y2;
@@ -115,8 +114,7 @@ int readBinarySac(ifstream& stream, PEyeLogEntry** out, entrytype et) {
     if (!stream.read( (char*)&y2        , sizeof(y2)))
         return errno;
 
-    *out = new PSaccadeEntry(et, time, duration, x1, y1, x2, y2);
-
+    *out = std::make_shared<PSaccadeEntry>(et, time, duration, x1, y1, x2, y2);
     return 0;
 }
 
@@ -149,9 +147,6 @@ void PEyeLog::close()
 
 void PEyeLog::clear()
 {
-    for (unsigned i = 0; i < m_entries.size(); i++) {
-        delete m_entries[i];
-    }
     m_entries.clear();
 }
 
@@ -161,7 +156,7 @@ void PEyeLog::reserve(unsigned size)
         m_entries.reserve(size);
 }
 
-void PEyeLog::addEntry(PEyeLogEntry* p)
+void PEyeLog::addEntry(PEntryPtr p)
 {
     m_entries.push_back(p);
 }
@@ -170,7 +165,11 @@ void PEyeLog::setEntries(const PEntryVec& entries, bool empty)
 {
     if (empty)
         clear();
-    m_entries = entries;
+    
+    for (auto i : entries)
+        m_entries.push_back(i);
+
+    sortEntryVec(m_entries);
 }
 
 int PEyeLog::read(const string& file, bool clear_content)
@@ -220,7 +219,7 @@ const char* PEyeLog::getFilename()const
     return m_filename.c_str();
 }
 
-const std::vector<PEyeLogEntry*>& PEyeLog::getEntries()const
+const PEntryVec& PEyeLog::getEntries()const
 {
     return m_entries;
 }
@@ -292,32 +291,34 @@ int readAscManual(std::ifstream& stream, PEyeLog* plog)
                     );
             if (matched >= 3 && matched < 6) { // monocular sample
                 plog->addEntry(
-                        
-                        new PGazeEntry( isleft ? LGAZE : RGAZE,
-                                       time,
-                                       x1,
-                                       y1,
-                                       p1
-                                       )
+                        std::make_shared<PGazeEntry>(
+                            isleft ? LGAZE : RGAZE,
+                            time,
+                            x1,
+                            y1,
+                            p1
+                            )
                         );
             }
             else if (matched == 6) { // binocular sample
                 plog->addEntry(
-                        new PGazeEntry( LGAZE,
-                                       time,
-                                       x1,
-                                       y1,
-                                       p1
-                                       )
+                        std::make_shared<PGazeEntry>(
+                            LGAZE,
+                            time,
+                            x1,
+                            y1,
+                            p1
+                            )
                         );
                                            
                 plog->addEntry(
-                        new PGazeEntry( RGAZE,
-                                       time,
-                                       x2,
-                                       y2,
-                                       p2
-                                       )
+                        std::make_shared<PGazeEntry>(
+                            RGAZE,
+                            time,
+                            x2,
+                            y2,
+                            p2
+                            )
                         );
             }
         }
@@ -327,12 +328,13 @@ int readAscManual(std::ifstream& stream, PEyeLog* plog)
 		    float x, y; 
             if (stream >> c >> tstart >> tend >> dur >> x >> y) {
                 plog->addEntry(
-                        new PFixationEntry(c == "L" ? LFIX : RFIX,
-                                          tstart,
-                                          dur,
-                                          x,
-                                          y
-                                          )
+                        std::make_shared<PFixationEntry>(
+                            c == "L" ? LFIX : RFIX,
+                            tstart,
+                            dur,
+                            x,
+                            y
+                            )
                         );
             }
         }
@@ -354,7 +356,7 @@ int readAscManual(std::ifstream& stream, PEyeLog* plog)
             while(msg.size() > 0 && isspace(msg[msg.size()-1]) )//rm trailing whitespace
                 msg.resize(msg.size()-1);
 
-            plog->addEntry(new PMessageEntry(time, msg));
+            plog->addEntry(std::make_shared<PMessageEntry>(time, msg));
         }
         else if (token == "SAMPLES") {
             string gaze, leftorright;
@@ -390,7 +392,9 @@ int readCsvFormat(std::ifstream& stream, PEyeLog* plog)
             case LGAZE:
             case RGAZE:
                 if (stream >> time >> x1 >> y1 >> p)
-                    plog->addEntry(new PGazeEntry(e, time, x1, y1, p));
+                    plog->addEntry(
+                            std::make_shared<PGazeEntry>(e, time, x1, y1, p)
+                            );
                 else {
                     noerror = false;
                     return ERR_INVALID_FILE_FORMAT;
@@ -400,7 +404,7 @@ int readCsvFormat(std::ifstream& stream, PEyeLog* plog)
             case RFIX:
                 if (stream >> time >> dur >> x1 >> y1)
                     plog->addEntry(
-                            new PFixationEntry(e, time, dur, x1, y1)
+                            std::make_shared<PFixationEntry>(e, time, dur, x1, y1)
                             );
                 else {
                     noerror = false;
@@ -421,7 +425,7 @@ int readCsvFormat(std::ifstream& stream, PEyeLog* plog)
                     }
                     std::getline(stream, msg, '\n');
                     plog->addEntry(
-                            new PMessageEntry(time, msg)
+                            std::make_shared<PMessageEntry>(time, msg)
                             );
                 }
                 else {
@@ -433,7 +437,15 @@ int readCsvFormat(std::ifstream& stream, PEyeLog* plog)
             case RSAC:
                 if (stream >> time >> dur >> x1 >> y1 >> x2 >> y2)
                     plog->addEntry(
-                            new PSaccadeEntry(e, time, dur, x1, y1, x2, y2)
+                            std::make_shared<PSaccadeEntry>(
+                                e,
+                                time,
+                                dur,
+                                x1,
+                                y1,
+                                x2,
+                                y2
+                                )
                             );
                 else {
                     noerror = false;
@@ -462,7 +474,7 @@ int readBinary(std::ifstream& stream, PEyeLog* plog)
             break;
 
         et = entrytype(e);
-        PEyeLogEntry* p = nullptr;
+        PEntryPtr p = nullptr;
         switch(et) {
             case LGAZE:
             case RGAZE:

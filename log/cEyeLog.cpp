@@ -27,6 +27,8 @@
 #include <cassert>
 #include <string>
 
+using std::shared_ptr;
+
 /*
  * Silence MS VC++ about strdup not being part of ISO C++ it will remain valid POSIX C
  */
@@ -38,7 +40,8 @@ coordinate* coordinate_new()
 {
     coordinate* c = NULL;
     try {
-        c = reinterpret_cast<coordinate*>(new PCoordinate);
+        PCoordinate* pc = new PCoordinate;
+        c = (coordinate*) new shared_ptr<PCoordinate>(pc);
     } catch(...) {
     }
     return c;
@@ -48,7 +51,8 @@ coordinate* coordinate_new_xy(float x, float y)
 {
     coordinate* c = NULL;
     try {
-        c = reinterpret_cast<coordinate*>(new PCoordinate(x, y));
+        PCoordinate* pc = new PCoordinate(x, y);
+        c = reinterpret_cast<coordinate*>(new shared_ptr<PCoordinate>(pc));
     } catch(...) {
     }
     return c;
@@ -57,89 +61,92 @@ coordinate* coordinate_new_xy(float x, float y)
 void coordinate_destroy(coordinate* coor)
 {
     assert(coor);
-    delete reinterpret_cast<PCoordinate*>(coor);
+    delete reinterpret_cast<shared_ptr<PCoordinate>*>(coor);
 }
 
 void coordinate_set_x(coordinate* coor, float x)
 {
     assert(coor);
-    reinterpret_cast<PCoordinate*>(coor)->setX(x);
+    (*reinterpret_cast<shared_ptr<PCoordinate>*>(coor))->setX(x);
 }
 
 void coordinate_set_y(coordinate* coor, float y)
 {
     assert(coor);
-    reinterpret_cast<PCoordinate*>(coor)->setY(y);
+    (*reinterpret_cast<shared_ptr<PCoordinate>*>(coor))->setY(y);
 }
 
 float coordinate_get_x(const coordinate* coor)
 {
     assert(coor);
-    return reinterpret_cast<const PCoordinate*>(coor)->getX();
+    return (*reinterpret_cast<const shared_ptr<const PCoordinate>*>(coor))->getX();
 }
 
 float coordinate_get_y(const coordinate* coor)
 {
     assert(coor);
-    return reinterpret_cast<const PCoordinate*>(coor)->getY();
+    return (*reinterpret_cast<const shared_ptr<const PCoordinate>*>(coor))->getY();
 }
 
 void eyelog_entry_destroy(eyelog_entry* e)
 {
-    delete reinterpret_cast<PEyeLogEntry*>(e);
+    delete reinterpret_cast<shared_ptr<PEyeLogEntry>*>(e);
 }
 
 eyelog_entry* eyelog_entry_clone(const eyelog_entry* other)
 {
     assert(other);
-    const PEyeLogEntry* o = reinterpret_cast<const PEyeLogEntry*>(other);
-    return reinterpret_cast<eyelog_entry*>(o->clone());
+    const PEntryPtr*    o   = reinterpret_cast<const PEntryPtr*>(other);
+    PEntryPtr*          copy= new PEntryPtr((*o)->clone());
+    eyelog_entry*       ret = reinterpret_cast<eyelog_entry*>(copy);
+    return ret;
 }
 
 char* eyelog_entry_to_string(const eyelog_entry* e)
 {
     assert(e);
-    return strdup(reinterpret_cast<const PEyeLogEntry*>(e)->toString().c_str());
+    const PEntryPtr* entry = reinterpret_cast<const PEntryPtr*>(e);
+    return strdup((*entry)->toString().c_str());
 }
 
 int eyelog_entry_compare(const eyelog_entry* e1, const eyelog_entry* e2)
 {
     assert(e1 && e2);
-    const PEyeLogEntry* entry1 = reinterpret_cast<const PEyeLogEntry*>(e1);
-    const PEyeLogEntry* entry2 = reinterpret_cast<const PEyeLogEntry*>(e2);
-    return entry1->compare(*entry2);
+    const PEntryPtr* entry1 = reinterpret_cast<const PEntryPtr*>(e1);
+    const PEntryPtr* entry2 = reinterpret_cast<const PEntryPtr*>(e2);
+    return (*entry1)->compare(**entry2);
 }
 
 int eyelog_entry_lt(const eyelog_entry* e1, const eyelog_entry* e2)
 {
     assert(e1 && e2);
-    const PEyeLogEntry* entry1 = reinterpret_cast<const PEyeLogEntry*>(e1);
-    const PEyeLogEntry* entry2 = reinterpret_cast<const PEyeLogEntry*>(e2);
-    return *entry1 < *entry2 ? 1 : 0;
+    const PEntryPtr* entry1 = reinterpret_cast<const PEntryPtr*>(e1);
+    const PEntryPtr* entry2 = reinterpret_cast<const PEntryPtr*>(e2);
+    return **entry1 < **entry2 ? 1 : 0;
 }
 
 int eyelog_entry_gt(const eyelog_entry* e1, const eyelog_entry* e2)
 {
     assert(e1 && e2);
-    const PEyeLogEntry* entry1 = reinterpret_cast<const PEyeLogEntry*>(e1);
-    const PEyeLogEntry* entry2 = reinterpret_cast<const PEyeLogEntry*>(e2);
-    return *entry1 > *entry2 ? 1 : 0;
+    const PEntryPtr* entry1 = reinterpret_cast<const PEntryPtr*>(e1);
+    const PEntryPtr* entry2 = reinterpret_cast<const PEntryPtr*>(e2);
+    return **entry1 > **entry2 ? 1 : 0;
 }
 
 int eyelog_entry_eq(const eyelog_entry* e1, const eyelog_entry* e2)
 {
     assert(e1 && e2);
-    const PEyeLogEntry* entry1 = reinterpret_cast<const PEyeLogEntry*>(e1);
-    const PEyeLogEntry* entry2 = reinterpret_cast<const PEyeLogEntry*>(e2);
-    return *entry1 == *entry2 ? 1 : 0;
+    const PEntryPtr* entry1 = reinterpret_cast<const PEntryPtr*>(e1);
+    const PEntryPtr* entry2 = reinterpret_cast<const PEntryPtr*>(e2);
+    return **entry1 == **entry2 ? 1 : 0;
 }
 
 int eyelog_entry_ne(const eyelog_entry* e1, const eyelog_entry* e2)
 {
     assert(e1 && e2);
-    const PEyeLogEntry* entry1 = reinterpret_cast<const PEyeLogEntry*>(e1);
-    const PEyeLogEntry* entry2 = reinterpret_cast<const PEyeLogEntry*>(e2);
-    return *entry1 != *entry2 ? 1 : 0;
+    const PEntryPtr* entry1 = reinterpret_cast<const PEntryPtr*>(e1);
+    const PEntryPtr* entry2 = reinterpret_cast<const PEntryPtr*>(e2);
+    return **entry1 != **entry2 ? 1 : 0;
 }
 
 void eyelog_entry_set_separator(eyelog_entry*e, char c)
@@ -147,25 +154,25 @@ void eyelog_entry_set_separator(eyelog_entry*e, char c)
     assert(e);
     std::string sep = "";
     sep += c;
-    reinterpret_cast<PEyeLogEntry*>(e)->setSeparator(sep);
+    (*reinterpret_cast<PEntryPtr*>(e))->setSeparator(sep);
 }
 
 char eyelog_entry_get_separator(const eyelog_entry* e)
 {
     assert(e);
-    return reinterpret_cast<const PEyeLogEntry*>(e)->getSeparator().c_str()[0];
+    return (*reinterpret_cast<const PEntryPtr*>(e))->getSeparator().c_str()[0];
 }
 
 void eyelog_entry_set_precision(eyelog_entry* e, unsigned prec)
 {
     assert(e);
-    reinterpret_cast<PEyeLogEntry*>(e)->setPrecision(prec);
+    (*reinterpret_cast<PEntryPtr*>(e))->setPrecision(prec);
 }
 
 unsigned eyelog_entry_get_precision(const eyelog_entry* e)
 {
     assert(e);
-    return reinterpret_cast<const PEyeLogEntry*>(e)->getPrecision();
+    return (*reinterpret_cast<const PEntryPtr*>(e))->getPrecision();
 }
 
 gaze_entry* gaze_entry_new(entrytype e, double time, float x, float y, float pupsiz)
@@ -173,7 +180,8 @@ gaze_entry* gaze_entry_new(entrytype e, double time, float x, float y, float pup
     assert(e == LGAZE || e == RGAZE);
     gaze_entry* r = NULL;
     try {
-        r = reinterpret_cast<gaze_entry*>(new PGazeEntry(e, time, x, y, pupsiz));
+        PGazeEntry* pe = new PGazeEntry(e, time, x, y, pupsiz);
+        r = reinterpret_cast<gaze_entry*>(new PGazePtr(pe));
     } catch(...) {
     }
     return r;
@@ -182,13 +190,13 @@ gaze_entry* gaze_entry_new(entrytype e, double time, float x, float y, float pup
 float gaze_entry_get_x(const gaze_entry* g)
 {
     assert(g);
-    return reinterpret_cast<const PGazeEntry*>(g)->getX();
+    return (*reinterpret_cast<const PGazePtr*>(g))->getX();
 }
 
 float gaze_entry_get_y(const gaze_entry* g)
 {
     assert(g);
-    return reinterpret_cast<const PGazeEntry*>(g)->getY();
+    return (*reinterpret_cast<const PGazePtr*>(g))->getY();
 }
 
 coordinate* gaze_entry_get_coordinate(const gaze_entry* g)
@@ -196,8 +204,9 @@ coordinate* gaze_entry_get_coordinate(const gaze_entry* g)
     assert(g);
     coordinate* ret = NULL;
     try {
-        ret = reinterpret_cast<coordinate*>(
-                new PCoordinate(reinterpret_cast<const PGazeEntry*>(g)->getCoordinate())
+        const PGazePtr* gaze = reinterpret_cast<const PGazePtr*>(g);
+        ret = new shared_ptr<PCoordinate>(
+                std::make_shared<PCoordinate>((*gaze)->getCoordinate())
                 );
     } catch (...) {
     }
@@ -207,19 +216,21 @@ coordinate* gaze_entry_get_coordinate(const gaze_entry* g)
 void gaze_entry_set_x(gaze_entry* g, float x)
 {
     assert(g);
-    reinterpret_cast<PGazeEntry*>(g)->setX(x);
+    (*reinterpret_cast<PGazePtr*>(g))->setX(x);
 }
 
 void gaze_entry_set_y(gaze_entry* g, float y)
 {
     assert(g);
-    reinterpret_cast<PGazeEntry*>(g)->setY(y);
+    (*reinterpret_cast<PGazePtr*>(g))->setY(y);
 }
 
 void gaze_entry_set_coordinate(gaze_entry* g, coordinate* c)
 {
     assert(g && c);
-    reinterpret_cast<PGazeEntry*>(g)->setCoordinate(*reinterpret_cast<PCoordinate*>(c));
+    (*reinterpret_cast<PGazePtr*>(g))->setCoordinate(
+            **(reinterpret_cast<std::shared_ptr<PCoordinate>*>(c)
+            );
 }
 
 fixation_entry* fixation_entry_new(entrytype et,

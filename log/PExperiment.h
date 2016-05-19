@@ -26,13 +26,21 @@
 #include<vector>
 #include<map>
 
+/**
+ * This class represents a trial in an experiment.
+ */
 class PTrial {
     
     public:
 
-        PTrial (const PTrialEntry* entry);
-        PTrial (const PTrialEntry& entry);
+        /**
+         * Create a PTrial from a PTrialEntry
+         */
+        PTrial (std::shared_ptr<PTrialEntry> entry);
 
+        /**
+         * Destroy a PTrial instance
+         */
         virtual ~PTrial();
 
         /**
@@ -50,12 +58,10 @@ class PTrial {
          * entry type is added, the PTrial returns an empty 
          * vector.
          */
-        const std::vector<PEyeLogEntry*>& operator[](entrytype type) const;
+        const PEntryVec& operator[](entrytype type) const;
 
         /**
          * Returns all the entries that belong to this trial.
-         *
-         * \note the entries in the vector should be freed.
          */
         PEntryVec getEntries() const;
 
@@ -95,12 +101,12 @@ class PTrial {
         /**
          * The trial entry belonging to this trial.
          */
-        PTrialEntry m_entry;
+        std::shared_ptr<PTrialEntry> m_entry;
 
         /**
          * This map contains all entries that belong to this trial.
          */
-        std::map<entrytype, std::vector<PEyeLogEntry*> > m_entries;
+        std::map<entrytype, PEntryVec> m_entries;
 
 };
 
@@ -119,7 +125,7 @@ class PExperiment {
         /**
          * Create an experiment from an vector of PEyeLogEntry.
          */
-        PExperiment(const std::vector<PEyeLogEntry*>& entries);
+        PExperiment(const PEntryVec& entries);
         
         /**
          * Create an experiment from PEyeLog instance
@@ -171,10 +177,10 @@ class PExperiment {
         /**
          * Data before the first trial is considered meta data
          */
-        std::vector<PEyeLogEntry*>  m_metadata;
+        PEntryVec               m_metadata;
 
         /**
          * All the trials in the experiment.
          */
-        std::vector<PTrial>         m_trials;
+        std::vector<PTrial>     m_trials;
 };

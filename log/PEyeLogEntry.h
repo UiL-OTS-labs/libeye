@@ -19,12 +19,21 @@
  * License along with this library; if not, see Licenses at www.gnu.org.
  */
 
+/**
+ * \file PEyeLogEntry.h
+ *
+ * This file contains the implementation of all the logentries. The
+ * file is part of the private section of libeye. It is not part of  
+ * the public API of libeye.
+ */
+
 #ifndef PEYELOGENTRY_H
 #define PEYELOGENTRY_H
 
 #include <string>
 #include <vector>
 #include <fstream>
+#include <memory>
 #include "constants.h"
 #include "PCoordinate.h"
 
@@ -37,32 +46,61 @@ class PMessageEntry;
 class PSaccadeEntry;
 class PStimulusEntry;
 class PTrialEntry;
+class PTrialStartEntry;
+class PTrialEndEntry;
 
-typedef PEyeLogEntry* PEntryPtr;
+/** typedef to simplify usage of std::shared_ptr<PEyeLogEntry> */
+typedef std::shared_ptr<PEyeLogEntry>       PEntryPtr;
+typedef std::shared_ptr<PGazeEntry>         PGazePtr;
+typedef std::shared_ptr<PFixationEntry>     PFixPtr;
+typedef std::shared_ptr<PMessageEntry>      PMsgPtr;
+typedef std::shared_ptr<PSaccadeEntry>      PSacPtr;
+typedef std::shared_ptr<PStimulusEntry>     PStimPtr;
+typedef std::shared_ptr<PTrialStartEntry>   PTrialStartPtr;
+typedef std::shared_ptr<PTrialEndEntry>     PTrialEndPtr;
+
+/** typedef to simplify usage of std::vector<PEntryPtr> */
 typedef std::vector<PEntryPtr> PEntryVec;
 
-/**
- * copy a vector with PEntryPtr.
- */
-PEntryVec copyPEntryVec(const PEntryVec& entries);
 
 /**
- * destroys the contents of a vector with PEntryPtr, the vector self 
- * remains intact.
+ * A comparator used for sorting ranges of PEntryPtr
  */
-void destroyPEntyVec(PEntryVec& entries);
+class PEyeLogEntryComparator {
+    bool operator ()(const PEntryPtr& entry1, const PEntryPtr& entry2);
+};
 
+/**
+ * Sorts an entryvec
+ */
+void sortEntryVec(PEntryVec& entries);
+
+/**
+ * PEyeLogEntry is the parent class of all logentries.
+ *
+ * All logentries derive from PEyeLogEntry since all logentries
+ * have a timestamp when they occur and that they have a certain type.
+ */
 class PEyeLogEntry {
 
-public :
+protected:
 
+    /**
+     * Construct a new PEyeLogEntry.
+     */
     PEyeLogEntry(entrytype etype, double eyetrktime);
+
+public :
+    
+    /**
+     * Destruct a PEyeLogEntry.
+     */
     virtual ~PEyeLogEntry(){};
 
     /**
      * \returns a clone of this class
      */
-    virtual PEyeLogEntry* clone() const =0;
+    virtual PEntryPtr clone() const =0;
 
     /**
      * \returns a PEyeLogEntry in string form.
@@ -76,7 +114,7 @@ public :
      * \param stream a opened stream.
      * \return 0 if succesful, or an int otherwise.
      */
-    virtual int writeBinary(std::ofstream& stream)const;
+    virtual int writeBinary(std::ofstream& stream) const;
 
     /**
      * compares this to another PEyeLogEntry
@@ -97,10 +135,25 @@ public :
      */
     virtual int compare(const PEyeLogEntry& other)const;
 
+    /**
+     * Checks whether this entry should occur before rhs in a log.
+     */
     bool operator <  (const PEyeLogEntry& rhs)const;
+   
+    /**
+     * Checks whether this entry should after before rhs in a log.
+     */
     bool operator >  (const PEyeLogEntry& rhs)const;
+    
+    /**
+     * Checks whether two PEyeLogEntry are identical
+     */
     bool operator == (const PEyeLogEntry& rhs)const;
+    /**
+     * Checks whether two PEyeLogEntry are not identical
+     */
     bool operator != (const PEyeLogEntry& rhs)const;
+
     // easy to implement but doesn't really make sense
     // because the only reason that these operators exist
     // is sorting and object equality.
@@ -144,24 +197,62 @@ public :
 
 private :
 
-    entrytype       m_type;     // the type of message
-    double          m_time;     // time on eyetracker.
+    entrytype       m_type;     ///< the type of message
+    double          m_time;     ///< time on eyetracker.
 
 protected :
-    static std::string m_sep;        // separates field in the output.
-    static unsigned    m_precision;  // uses as precision in the output.
+    static std::string m_sep;        ///< separates field in the output.
+    static unsigned    m_precision;  ///< uses as precision in the output.
 };
 
+/**
+ * PGazeEntry is an implementation of gaze in a log.
+ *
+ * All logentries derive from PEyeLogEntry since all logentries
+ * have a timestamp when they occur and that they have a certain type.
+ */
 class PGazeEntry : public PEyeLogEntry {
+
     friend class PEyeLogEntry;
 
 public :
 
+    /**
+     * Construct a PGazeEntry
+     *
+     * \param t     The entrytype of the gaze must be LGAZE or RGAZE.
+     * \param time  The time in ms of the gaze.
+     * \param x     The x coordinate of the gaze.
+     * \param y     The y coordinate of the gaze.
+     * \param pupil The pupilsize of the sample unit is probably eyetracker
+     *              dependent.
+     */
     PGazeEntry(entrytype t, double time, float x, float y, float pupil);
+   
+    /**
+     * Construct a PGazeEntry
+     *
+     * \param t     The entrytype of the gaze must be LGAZE or RGAZE.
+     * \param time  The time in ms of the gaze.
+     * \param c     The 2D coordinate of the sample.
+     * \param pupil The pupilsize of the sample unit is probably eyetracker
+     *              dependent.
+     */
     PGazeEntry(entrytype t, double time, const PCoordinate& c, float pupil);
+    
+    /**
+     * Construct a PGazeEntry
+     *
+     * copy constructor
+     *
+     * \param gazeentry another gazeentry
+     */
     PGazeEntry(const PGazeEntry& gazeentry);
 
-    PEyeLogEntry* clone() const;
+    /**
+     * \returns a pointer to a new PEyeLogEntry
+     */
+    virtual PEntryPtr clone() const;
 
     /**
      * @return a string that represents the entry type
@@ -247,7 +338,7 @@ public:
             );
     PFixationEntry(const PFixationEntry& fixentry);
 
-    PEyeLogEntry* clone() const;
+    virtual PEntryPtr clone() const;
     
     virtual std::string toString() const;
     
@@ -285,7 +376,7 @@ public :
     PMessageEntry (double eyetime, const std::string& Message);
     PMessageEntry (const PMessageEntry& messageentry);
 
-    PEyeLogEntry* clone()const;
+    virtual PEntryPtr clone()const;
 
     virtual std::string toString() const;
     
@@ -320,7 +411,7 @@ public:
 
     PSaccadeEntry(const PSaccadeEntry& sacentry);
 
-    PEyeLogEntry* clone()const;
+    virtual PEntryPtr clone()const;
 
     virtual std::string toString() const;
     

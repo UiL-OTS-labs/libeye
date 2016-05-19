@@ -38,12 +38,10 @@ PEntryVec copyPEntryVec(const PEntryVec& entries)
     return out;
 }
 
-void destroyPEntyVec(PEntryVec& entries)
+bool PEyeLogEntryComparator::operator() (const PEntryPtr& p1, const PEntryPtr& p2)
 {
-    for (auto i = 0u; i < entries.size(); i++)
-        delete entries[i];
+    return *p1 < *p2;
 }
-
 
 /* ** PEyeLogEntry * **/
 
@@ -187,9 +185,9 @@ PGazeEntry::PGazeEntry(const PGazeEntry& other)
 {
 }
 
-PEyeLogEntry* PGazeEntry::clone() const
+PEntryPtr PGazeEntry::clone() const
 {
-    return new PGazeEntry(*this);
+    return std::make_shared<PGazeEntry>(*this);
 }
 
 string PGazeEntry::toString()const
@@ -299,9 +297,9 @@ PFixationEntry::PFixationEntry(const PFixationEntry& other)
 {
 }
 
-PEyeLogEntry* PFixationEntry::clone()const
+PEntryPtr PFixationEntry::clone()const
 {
-    return new PFixationEntry(*this);
+    return std::make_shared<PFixationEntry>(*this);
 }
 
 string PFixationEntry::toString() const
@@ -407,9 +405,9 @@ PMessageEntry::PMessageEntry(const PMessageEntry& other)
 {
 }
 
-PEyeLogEntry* PMessageEntry::clone()const
+PEntryPtr PMessageEntry::clone()const
 {
-    return new PMessageEntry(*this);
+    return std::make_shared<PMessageEntry>(*this);
 }
 
 string PMessageEntry::toString()const
@@ -489,9 +487,9 @@ PSaccadeEntry::PSaccadeEntry(const PSaccadeEntry& other)
 {
 }
 
-PEyeLogEntry* PSaccadeEntry::clone()const
+PEntryPtr PSaccadeEntry::clone()const
 {
-    return new PSaccadeEntry(*this);
+    return std::make_shared<PSaccadeEntry>(*this);
 }
 
 string PSaccadeEntry::toString() const
@@ -678,7 +676,7 @@ string PTrialEntry::toString()const
 
 PEntryPtr PTrialEntry::clone()const
 {
-    return new PTrialEntry(*this);
+    return std::make_shared<PTrialEntry>(*this);
 }
 
 int PTrialEntry::writeBinary(ofstream& stream) const
@@ -747,7 +745,7 @@ int PTrialStartEntry::compare(const PTrialStartEntry& other) const
 
 PEntryPtr PTrialStartEntry::clone() const
 {
-    return new PTrialStartEntry(*this);
+    return std::make_shared<PTrialStartEntry>(*this);
 }
 
 PTrialEndEntry::PTrialEndEntry(double time)
@@ -776,5 +774,5 @@ int PTrialEndEntry::compare(const PTrialEndEntry& other) const
 
 PEntryPtr PTrialEndEntry::clone() const
 {
-    return new PTrialEndEntry(*this);
+    return std::make_shared<PTrialEndEntry>(*this);
 }

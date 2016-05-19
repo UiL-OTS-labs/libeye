@@ -24,7 +24,6 @@
 #define PEYE_LOG_H
 
 #include <string>
-#include <vector>
 #include <fstream>
 #include "PEyeLogEntry.h"
 #include "constants.h"
@@ -82,7 +81,7 @@ public :
     /**
      * Adds an entry to this log
      */
-    void addEntry(PEyeLogEntry* entry);
+    void addEntry(PEntryPtr entry);
 
     /**
      * writes the file in a binary format.
@@ -115,7 +114,7 @@ public :
     /**
      * Gets all logentries.
      */
-    const std::vector<PEyeLogEntry*>& getEntries()const;
+    const PEntryVec& getEntries()const;
 
     /**
      * Sets the logentries and optionally clear the existing.
@@ -123,18 +122,35 @@ public :
      * Set the logentries and make sure they are sorted on
      * time and entrytype.
      */
-    void setEntries(const std::vector<PEyeLogEntry*>& entries,
+    void setEntries(const PEntryVec& entries,
                     bool clear=true
                     );
 
 private:
 
-    std::vector<PEyeLogEntry*>  m_entries;
+    /**
+     * All entries contained by the log.
+     */
+    PEntryVec                   m_entries;
 
+    /**
+     * The ofstream where all entries are written to.
+     */
     mutable std::ofstream       m_file;
 
+    /**
+     * The ofstream where all entries are written to.
+     */
     std::string                 m_filename;
+    
+    /**
+     * Indicates whether the file is open.
+     */
     bool                        m_isopen;
+
+    /**
+     * Indicates whether or not to write in binary or csv format. 
+     */
     bool                        m_writebinary;
 };
 

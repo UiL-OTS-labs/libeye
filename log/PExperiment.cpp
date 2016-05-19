@@ -20,17 +20,14 @@
  */
 
 #include <cassert>
+#include <memory>
 #include "PExperiment.h"
 #include "PEyeLogEntry.h"
 
-PTrial::PTrial(const PTrialEntry* entry)
-    : m_entry(*entry)
-{
-}
-
-PTrial::PTrial(const PTrialEntry& entry)
+PTrial::PTrial( std::shared_ptr<PTrialEntry>entry )
     : m_entry(entry)
 {
+    addEntry(entry);
 }
 
 PTrial::~PTrial()
@@ -42,12 +39,12 @@ void PTrial::addEntry(const PEntryPtr entry)
     entrytype t = entry->getEntryType();
     auto it = m_entries.find(t);
     if (it != m_entries.end())
-        it->second.push_back(entry->clone());
+        it->second.push_back(entry);
     m_entries[t] = PEntryVec();
-    m_entries[t].push_back(entry->clone());
+    m_entries[t].push_back(entry);
 }
 
-const std::vector<PEyeLogEntry*>& PTrial::operator[](entrytype t) const
+const PEntryVec& PTrial::operator[](entrytype t) const
 {
     const static PEntryVec empty; // empty return value.
     const auto it = m_entries.find(t);
@@ -60,20 +57,16 @@ const std::vector<PEyeLogEntry*>& PTrial::operator[](entrytype t) const
 PEntryVec PTrial::getEntries() const
 {
     PEntryVec vec;
-    vec.push_back(m_entry.clone());
     for (const auto& pair : m_entries)
-        for (const auto* entry: pair.second)
-            vec.push_back(entry->clone());
+        for (const auto& entry: pair.second)
+            vec.push_back(entry);
     return vec;
 }
 
 void PTrial::clear() 
 {
-    for(auto& pair: m_entries) {
-        auto& vec = pair.second;
-        destroyPEntyVec(vec);
-    }
     m_entries.clear();
+    addEntry(m_entry);
 }
 
 /*
@@ -111,19 +104,19 @@ bool PTrial::operator!=(const PTrial& other) const
 
 std::string PTrial::getIdentifier() const
 {
-    return m_entry.getIdentifier();
+    return m_entry->getIdentifier();
 }
 
 std::string PTrial::getGroup() const
 {
-    return m_entry.getGroup();
+    return m_entry->getGroup();
 }
 
 PExperiment::PExperiment()
 {
 }
 
-PExperiment::PExperiment(const std::vector<PEyeLogEntry*>& entries)
+PExperiment::PExperiment(const PEntryVec& entries)
 {
     initFromEntryVec(entries);
 }
@@ -143,13 +136,17 @@ void PExperiment::initFromEntryVec(const PEntryVec& entries)
     // and pushes the new entries to those trials.
     for (const auto& e : entries) {
         if (m_trials.empty() && e->getEntryType() != TRIAL) {
-            m_metadata.push_back(e->clone());
+            m_metadata.push_back(e);
             continue;
         }
         switch(e->getEntryType()) {
             case TRIAL:
                 end = false;
-                m_trials.push_back(PTrial(static_cast<PTrialEntry*>(e)));
+                m_trials.push_back(
+                        PTrial(
+                            std::static_pointer_cast<PTrialEntry>(e)
+                            )
+                        );
                 break;
             case TRIALSTART:
                 m_trials[m_trials.size() - 1].clear();
@@ -191,5 +188,5 @@ void PExperiment::getLog(PEyeLog& log, bool append)const
         log.clear();
     log.setEntries(m_metadata, false);
     for (const auto& trial : m_trials)
-        log.setEntries(copyPEntryVec(trial.getEntries()), false);
+        log.setEntries(trial.getEntries(), false);
 }
