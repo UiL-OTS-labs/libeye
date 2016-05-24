@@ -22,6 +22,10 @@
 #ifndef PCOORDINATE_H
 #define PCOORDINATE_H
 
+#include<memory>
+
+class PCoordinate;
+typedef std::shared_ptr<PCoordinate> PCoorPtr;
 
 /**
  * PCoordinate a simple class that can specify a coordinate in 2D space
@@ -32,6 +36,7 @@ class PCoordinate {
 
         PCoordinate();
         PCoordinate(float x, float y);
+        PCoordinate(const PCoordinate&);
 
         float getX()const;
         float getY()const;

@@ -31,6 +31,11 @@ PCoordinate::PCoordinate(float x, float y)
 {
 }
 
+PCoordinate::PCoordinate(const PCoordinate& c)
+    : m_x(c.m_x), m_y(c.m_y)
+{
+}
+
 float PCoordinate::getX() const
 {
     return m_x;

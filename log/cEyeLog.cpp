@@ -28,9 +28,11 @@
 #include <string>
 
 using std::shared_ptr;
+using std::make_shared;
 
 /*
- * Silence MS VC++ about strdup not being part of ISO C++ it will remain valid POSIX C
+ * Silence MS VC++ about strdup not being part of ISO C++ it will remain
+ * valid POSIX C
  */
 #if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
 #  define strdup _strdup
@@ -205,9 +207,11 @@ coordinate* gaze_entry_get_coordinate(const gaze_entry* g)
     coordinate* ret = NULL;
     try {
         const PGazePtr* gaze = reinterpret_cast<const PGazePtr*>(g);
-        ret = new shared_ptr<PCoordinate>(
+        shared_ptr<PCoordinate>* coor =
+            new shared_ptr<PCoordinate>(
                 std::make_shared<PCoordinate>((*gaze)->getCoordinate())
                 );
+        ret = reinterpret_cast<coordinate*>(coor);
     } catch (...) {
     }
     return ret;
@@ -228,9 +232,9 @@ void gaze_entry_set_y(gaze_entry* g, float y)
 void gaze_entry_set_coordinate(gaze_entry* g, coordinate* c)
 {
     assert(g && c);
-    (*reinterpret_cast<PGazePtr*>(g))->setCoordinate(
-            **(reinterpret_cast<std::shared_ptr<PCoordinate>*>(c)
-            );
+    shared_ptr<PCoordinate>* Coor = reinterpret_cast<shared_ptr<PCoordinate>*>(c);
+    PGazePtr* gaze = reinterpret_cast<PGazePtr*>(g);
+    (*gaze)->setCoordinate(**Coor);
 }
 
 fixation_entry* fixation_entry_new(entrytype et,
@@ -243,9 +247,8 @@ fixation_entry* fixation_entry_new(entrytype et,
     assert(et == LFIX || et == RFIX);
     fixation_entry* ret = NULL;
     try {
-        ret = reinterpret_cast<fixation_entry*>(
-                new PFixationEntry(et, t, d, x, y)
-                );
+        PFixationEntry* entry = new PFixationEntry(et, t, d, x, y);
+        ret = reinterpret_cast<fixation_entry*>(new PFixPtr(entry));
     } catch (...) {
 
     }
@@ -255,22 +258,26 @@ fixation_entry* fixation_entry_new(entrytype et,
 float fixation_entry_get_x(const fixation_entry* f)
 {
     assert(f);
-    return reinterpret_cast<const PFixationEntry*>(f)->getX();
+    return (*reinterpret_cast<const PFixPtr*>(f))->getX();
 }
 
 float fixation_entry_get_y(const fixation_entry* f)
 {
     assert(f);
-    return reinterpret_cast<const PFixationEntry*>(f)->getY();
+    return (*reinterpret_cast<const PFixPtr*>(f))->getY();
 }
+
 
 coordinate* fixation_entry_get_coordinate(const fixation_entry* f)
 {
     assert(f);
     coordinate* ret = NULL;
     try {
+        const PFixPtr fix = *reinterpret_cast<const PFixPtr*>(f);
+        PCoordinate coor = fix->getCoordinate();
+        auto shared = make_shared<PCoordinate>(coor);
         ret = reinterpret_cast<coordinate*>(
-                new PCoordinate(reinterpret_cast<const PFixationEntry*>(f)->getCoordinate())
+                new std::shared_ptr<PCoordinate>(shared)
                 );
     } catch(...) {
     }
@@ -280,40 +287,42 @@ coordinate* fixation_entry_get_coordinate(const fixation_entry* f)
 double fixation_entry_get_duration(const fixation_entry* f)
 {
     assert(f);
-    return reinterpret_cast<const PFixationEntry*>(f)->getDuration();
+    return (*reinterpret_cast<const PFixPtr*>(f))->getDuration();
 }
 
 void fixation_entry_set_x(fixation_entry* f, float x)
 {
     assert(f);
-    reinterpret_cast<PFixationEntry*>(f)->setX(x);
+    (*reinterpret_cast<PFixPtr*>(f))->setX(x);
 }
 
 void fixation_entry_set_y(fixation_entry* f, float y)
 {
     assert(f);
-    reinterpret_cast<PFixationEntry*>(f)->setY(y);
+    (*reinterpret_cast<PFixPtr*>(f))->setY(y);
 }
 
 void fixation_entry_set_coordinate(fixation_entry* f, coordinate* c)
 {
     assert(f && c);
-    reinterpret_cast<PFixationEntry*>(f)->setCoordinate(
-            *reinterpret_cast<PCoordinate*>(c)
-            );
+    PFixPtr*    fix = reinterpret_cast<PFixPtr*>(f);
+    PCoorPtr*   coor= reinterpret_cast<PCoorPtr*>(c);
+    (*fix)->setCoordinate(**coor);
 }
 
 void fixation_entry_set_duration(fixation_entry* f, double d)
 {
     assert(f);
-    reinterpret_cast<PFixationEntry*>(f)->setDuration(d);
+    (*reinterpret_cast<PFixPtr*>(f))->setDuration(d);
 }
 
 message_entry* message_entry_new(double t, const char* msg)
 {
     message_entry* r = NULL;
     try {
-        r = reinterpret_cast<message_entry*>(new PMessageEntry(t, msg));
+        PMessageEntry* message = new PMessageEntry(t, msg);
+        if (message)
+            r = reinterpret_cast<message_entry*>(new PMsgPtr(message));
     } catch(...) {
     }
     return r;
@@ -322,7 +331,9 @@ message_entry* message_entry_new(double t, const char* msg)
 char* message_entry_get_message(const message_entry* m)
 {
     assert(m);
-    return strdup(reinterpret_cast<const PMessageEntry*>(m)->getMessage().c_str());
+    return strdup(
+            (*reinterpret_cast<const PMsgPtr*>(m))->getMessage().c_str()
+            );
 }
 
 void message_entry_set_message(message_entry* m, const char* msg)
@@ -330,21 +341,28 @@ void message_entry_set_message(message_entry* m, const char* msg)
     assert(m && msg);
     try {
         std::string message(msg);
-        reinterpret_cast<PMessageEntry*>(m)->setMessage(message);
+        (*reinterpret_cast<PMsgPtr*>(m))->setMessage(message);
     } catch(...) {
         assert(false);
         // improve error handeling here if the string can't be allocated eg.
     }
 }
 
-saccade_entry* saccade_entry_new(entrytype et, double t, double d, float x1, float y1,
-                                 float x2, float y2)
+saccade_entry* saccade_entry_new(entrytype et,
+                                 double    t,
+                                 double    d,
+                                 float     x1,
+                                 float     y1,
+                                 float     x2,
+                                 float     y2
+                                 )
 {
     assert(et == LSAC || et == RSAC);
     saccade_entry* r = NULL;
     try {
+        PSaccadeEntry* e = new PSaccadeEntry(et, t, d, x1, y1, x2, y2);
         r = reinterpret_cast<saccade_entry*>(
-                new PSaccadeEntry(et, t, d, x1, y1, x2, y2)
+                new PSacPtr(e)
                 );
     } catch(...) {
     }
@@ -354,31 +372,31 @@ saccade_entry* saccade_entry_new(entrytype et, double t, double d, float x1, flo
 float saccade_entry_get_x1(const saccade_entry* s)
 {
     assert(s);
-    return reinterpret_cast<const PSaccadeEntry*>(s)->getX1();
+    return (*reinterpret_cast<const PSacPtr*>(s))->getX1();
 }
 
 float saccade_entry_get_y1(const saccade_entry* s)
 {
     assert(s);
-    return reinterpret_cast<const PSaccadeEntry*>(s)->getY1();
+    return (*reinterpret_cast<const PSacPtr*>(s))->getY1();
 }
 
 float saccade_entry_get_x2(const saccade_entry* s)
 {
     assert(s);
-    return reinterpret_cast<const PSaccadeEntry*>(s)->getX2();
+    return (*reinterpret_cast<const PSacPtr*>(s))->getX2();
 }
 
 float saccade_entry_get_y2(const saccade_entry* s)
 {
     assert(s);
-    return reinterpret_cast<const PSaccadeEntry*>(s)->getY2();
+    return (*reinterpret_cast<const PSacPtr*>(s))->getY2();
 }
 
 double saccade_entry_get_duration(const saccade_entry* s)
 {
     assert(s);
-    return reinterpret_cast<const PSaccadeEntry*>(s)->getDuration();
+    return (*reinterpret_cast<const PSacPtr*>(s))->getDuration();
 }
 
 coordinate* saccade_entry_get_coordinate1(const saccade_entry* s)
@@ -386,9 +404,13 @@ coordinate* saccade_entry_get_coordinate1(const saccade_entry* s)
     assert(s);
     coordinate* ret = NULL;
     try {
-        ret = reinterpret_cast<coordinate*>(
-                new PCoordinate(reinterpret_cast<const PSaccadeEntry*>(s)->getCoordinate1())
-                );
+        const PSacPtr*  sac = reinterpret_cast<const PSacPtr*> (s);
+        PCoordinate*    coor= new PCoordinate((*sac)->getCoordinate1());
+        if (coor) {
+            ret = reinterpret_cast<coordinate*>(
+                    new shared_ptr<PCoordinate>(coor)
+                    );
+        }
     } catch(...) {
     }
     return ret;
@@ -399,9 +421,12 @@ coordinate* saccade_entry_get_coordinate2(const saccade_entry* s)
     assert(s);
     coordinate* ret = NULL;
     try {
-        ret = reinterpret_cast<coordinate*>(
-                new PCoordinate(reinterpret_cast<const PSaccadeEntry*>(s)->getCoordinate2())
-                );
+        const PSacPtr*  sac = reinterpret_cast<const PSacPtr*>(s);
+        PCoordinate*    coor= new PCoordinate((*sac)->getCoordinate2());
+        if (coor)
+            ret = reinterpret_cast<coordinate*>(
+                    new shared_ptr<PCoordinate>(coor)
+                    );
     } catch(...) {
     }
     return ret;
@@ -410,47 +435,47 @@ coordinate* saccade_entry_get_coordinate2(const saccade_entry* s)
 void saccade_entry_set_x1(saccade_entry* s, float x)
 {
     assert(s);
-    reinterpret_cast<PSaccadeEntry*>(s)->setX1(x);
+    (*reinterpret_cast<PSacPtr*>(s))->setX1(x);
 }
 
 void saccade_entry_set_y1(saccade_entry* s, float y)
 {
     assert(s);
-    reinterpret_cast<PSaccadeEntry*>(s)->setY1(y);
+    (*reinterpret_cast<PSacPtr*>(s))->setY1(y);
 }
 
 void saccade_entry_set_x2(saccade_entry* s, float x)
 {
     assert(s);
-    reinterpret_cast<PSaccadeEntry*>(s)->setX2(x);
+    (*reinterpret_cast<PSacPtr*>(s))->setX2(x);
 }
 
 void saccade_entry_set_y2(saccade_entry* s, float y)
 {
     assert(s);
-    reinterpret_cast<PSaccadeEntry*>(s)->setY2(y);
+    (*reinterpret_cast<PSacPtr*>(s))->setY2(y);
 }
 
 void saccade_entry_set_duration(saccade_entry* s, double dur)
 {
     assert(s);
-    reinterpret_cast<PSaccadeEntry*>(s)->setDuration(dur);
+    (*reinterpret_cast<PSacPtr*>(s))->setDuration(dur);
 }
 
 void saccade_entry_set_coordinate1(saccade_entry* s, coordinate* c)
 {
     assert(s && c);
-    reinterpret_cast<PSaccadeEntry*>(s)->setCoordinate1(
-            *reinterpret_cast<PCoordinate*>(c)
-            );
+    PSacPtr*  sac = reinterpret_cast<PSacPtr*>(s);
+    PCoorPtr* coor= reinterpret_cast<PCoorPtr*>(c);
+    (*sac)->setCoordinate1(**coor);
 }
 
 void saccade_entry_set_coordinate2(saccade_entry* s, coordinate* c)
 {
     assert(s && c);
-    reinterpret_cast<PSaccadeEntry*>(s)->setCoordinate2(
-            *reinterpret_cast<PCoordinate*>(c)
-            );
+    PSacPtr*  sac = reinterpret_cast<PSacPtr*>(s);
+    PCoorPtr* coor= reinterpret_cast<PCoorPtr*>(c);
+    (*sac)->setCoordinate2(**coor);
 }
 
 
@@ -458,9 +483,12 @@ trial_entry* trial_entry_new(double time, const char* identifier, const char* gr
 {
     trial_entry* r = NULL;
     try {
-        r = reinterpret_cast<trial_entry*>(
-                new PTrialEntry(time, identifier, group)
-                );
+        PTrialEntry* ptr = new PTrialEntry(time, identifier, group);
+        if (ptr) {
+            r = reinterpret_cast<trial_entry*>(
+                    new shared_ptr<PTrialEntry>(ptr)
+                    );
+        }
     } catch(...) {
     }
     return r;
@@ -469,13 +497,16 @@ trial_entry* trial_entry_new(double time, const char* identifier, const char* gr
 char* trial_entry_get_identifier(const trial_entry* t)
 {
     assert(t);
-    return strdup(reinterpret_cast<const PTrialEntry*>(t)->getIdentifier().c_str());
+    const PTrialPtr*    trial = reinterpret_cast<const PTrialPtr*>(t);
+
+    return strdup((*trial)->getIdentifier().c_str());
 }
 
 char* trial_entry_get_group(const trial_entry* t)
 {
     assert(t);
-    return strdup(reinterpret_cast<const PTrialEntry*>(t)->getGroup().c_str());
+    const PTrialPtr*    trial = reinterpret_cast<const PTrialPtr*>(t);
+    return strdup((*trial)->getGroup().c_str());
 }
 
 void trial_entry_set_identifier(trial_entry* t, const char* identifier)
@@ -483,7 +514,8 @@ void trial_entry_set_identifier(trial_entry* t, const char* identifier)
     assert(t && identifier);
     try {
         std::string i(identifier);
-        reinterpret_cast<PTrialEntry*>(t)->setIdentifier(i);
+        PTrialPtr* trial = reinterpret_cast<PTrialPtr*>(t);
+        (*trial)->setIdentifier(i);
     }
     catch(...) {
         // improve error handeling like std::bad_alloc
@@ -495,7 +527,8 @@ void trial_entry_set_group(trial_entry* t, const char* group)
     assert(t && group);
     try {
         std::string g(group);
-        reinterpret_cast<PTrialEntry*>(t)->setGroup(g);
+        PTrialPtr* trial = reinterpret_cast<PTrialPtr*>(t);
+        (*trial)->setGroup(g);
     }
     catch(...) {
         // improve error handeling like std::bad_alloc
@@ -506,7 +539,12 @@ trial_start_entry* trial_start_entry_new(double time)
 {
     trial_start_entry* r = NULL;
     try {
-        r = reinterpret_cast<trial_start_entry*> (new PTrialStartEntry(time));
+        PTrialStartEntry* ptr = new PTrialStartEntry(time);
+        if (ptr) {
+            r = reinterpret_cast<trial_start_entry*> (
+                    new PTrialStartPtr(ptr)
+                    );
+        }
     }
     catch (...) {
     }
@@ -517,7 +555,10 @@ trial_end_entry* trial_end_entry_new(double time)
 {
     trial_end_entry* r = NULL;
     try {
-        r = reinterpret_cast<trial_end_entry*> (new PTrialEndEntry(time));
+        PTrialEndEntry* ptr = new PTrialEndEntry(time);
+        r = reinterpret_cast<trial_end_entry*> (
+                new PTrialEndPtr(ptr)
+                );
     }
     catch (...) {
     }
@@ -530,7 +571,10 @@ eye_log* eye_log_new()
 {
     eye_log* log = nullptr;
     try {
-        log = reinterpret_cast<eye_log*>(new PEyeLog);
+        PEyeLog* l= new PEyeLog;
+        log = reinterpret_cast<eye_log*>(
+                new PLogPtr(l)
+                );
     } catch (...) {
     }
     return log;
@@ -538,76 +582,107 @@ eye_log* eye_log_new()
 
 void eye_log_destroy(eye_log* log)
 {
-    delete reinterpret_cast<PEyeLog*>(log);
+    delete reinterpret_cast<PLogPtr*>(log);
 }
 
 int eye_log_open(eye_log* log, const char* filename) 
 {
     assert(log && filename);
-    PEyeLog* l = reinterpret_cast<PEyeLog*>(log);
-    return l->open(filename);
+    PLogPtr* l = reinterpret_cast<PLogPtr*>(log);
+    return (*l)->open(filename);
 }
 
 void eye_log_close(eye_log* log)
 {
     assert(log);
-    reinterpret_cast<PEyeLog*>(log)->close();
+    PLogPtr* l = reinterpret_cast<PLogPtr*>(log);
+    (*l)->close();
 }
 
 void eye_log_clear(eye_log* log)
 {
     assert(log);
-    reinterpret_cast<PEyeLog*>(log)->clear();
+    (*reinterpret_cast<PLogPtr*>(log))->clear();
 }
 
 void eye_log_reserve(eye_log* log, unsigned size)
 {
     assert(log);
-    reinterpret_cast<PEyeLog*>(log)->reserve(size);
+    PLogPtr* l = reinterpret_cast<PLogPtr*>(log);
+    (*l)->reserve(size);
 }
 
 void eye_log_add_entry(eye_log* log, eyelog_entry* entry)
 {
     assert(log && entry);
-    PEyeLog      *l = reinterpret_cast<PEyeLog*>(log);
-    PEyeLogEntry *e = reinterpret_cast<PEyeLogEntry*>(entry);
-    l->addEntry(e);
+    PLogPtr     *l = reinterpret_cast<PLogPtr*>(log);
+    PEntryPtr   *e = reinterpret_cast<PEntryPtr*>(entry);
+    (*l)->addEntry(*e);
 }
 
 int eye_log_write(eye_log* log, eyelog_format f)
 {
     assert(log);
-    return reinterpret_cast<PEyeLog*>(log)->write(f);
+    PLogPtr* l = reinterpret_cast<PLogPtr*>(log);
+    return (*l)->write(f);
 }
 
 int eye_log_read(eye_log* log, const char* filename, bool clear)
 {
     assert(log && filename);
-    PEyeLog* l = reinterpret_cast<PEyeLog*>(log);
-    return l->read(filename, clear);
+    PLogPtr* l = reinterpret_cast<PLogPtr*>(log);
+    return (*l)->read(filename, clear);
 }
 
 bool eye_log_is_open(eye_log* log)
 {
     assert(log);
-	return reinterpret_cast<PEyeLog*>(log)->isOpen();
+    PLogPtr* l = reinterpret_cast<PLogPtr*>(log);
+	return (*l)->isOpen();
 }
 
 const char* eye_log_get_filename(eye_log* log)
 {
     assert(log);
-    return reinterpret_cast<PEyeLog*>(log)->getFilename();
+    PLogPtr* l = reinterpret_cast<PLogPtr*>(log);
+    return (*l)->getFilename();
 }
 
-void eye_log_get_entries(eye_log             *log,
-                         eyelog_entry        ***entries,
-                         unsigned            *size
+void eye_log_get_entries(eye_log        *log,
+                         eyelog_entry   ***entries,
+                         int            *size
                          )
 {
     assert(log && entries && size);
-    PEyeLog* l = reinterpret_cast<PEyeLog*>(log);
-    const std::vector<PEyeLogEntry*> &le = l->getEntries();
-    PEyeLogEntry** data = const_cast<PEyeLogEntry**>(le.data());
-    *entries = reinterpret_cast<eyelog_entry**>(data);
-    *size = le.size();
+    PLogPtr* l = reinterpret_cast<PLogPtr*>(log);
+    const PEntryVec& le = (*l)->getEntries();
+    try {
+        PEntryPtr* data = new PEntryPtr[le.size()];
+        if (data) {
+            for (unsigned i = 0; i < le.size(); ++i) {
+                data[i] = le[i];
+            }
+            *size = le.size();
+        }
+        else {
+            *size = -1;
+        }
+
+        *size = le.size();
+    } catch (...) {
+        *size = -1;
+    }
 }
+
+//void eye_log_get_entries(eye_log             *log,
+//                         eyelog_entry        ***entries,
+//                         unsigned            *size
+//                         )
+//{
+//    assert(log && entries && size);
+//    PEyeLog* l = reinterpret_cast<PEyeLog*>(log);
+//    const std::vector<PEyeLogEntry*> &le = l->getEntries();
+//    PEyeLogEntry** data = const_cast<PEyeLogEntry**>(le.data());
+//    *entries = reinterpret_cast<eyelog_entry**>(data);
+//    *size = le.size();
+//}

@@ -28,6 +28,9 @@
 #include "PEyeLogEntry.h"
 #include "constants.h"
 
+class PEyeLog;
+typedef std::shared_ptr<PEyeLog> PLogPtr;
+
 /**
  * readLog opens a logfile
  *

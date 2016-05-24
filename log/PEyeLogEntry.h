@@ -56,6 +56,7 @@ typedef std::shared_ptr<PFixationEntry>     PFixPtr;
 typedef std::shared_ptr<PMessageEntry>      PMsgPtr;
 typedef std::shared_ptr<PSaccadeEntry>      PSacPtr;
 typedef std::shared_ptr<PStimulusEntry>     PStimPtr;
+typedef std::shared_ptr<PTrialEntry>        PTrialPtr;
 typedef std::shared_ptr<PTrialStartEntry>   PTrialStartPtr;
 typedef std::shared_ptr<PTrialEndEntry>     PTrialEndPtr;
 
