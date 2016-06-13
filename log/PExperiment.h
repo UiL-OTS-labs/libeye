@@ -23,7 +23,7 @@
 #include"constants.h"
 #include"PEyeLogEntry.h"
 #include"PEyeLog.h"
-#include<vector>
+#include"DArray.h"
 #include<map>
 
 class PTrial {
@@ -32,6 +32,7 @@ class PTrial {
 
         PTrial (const PTrialEntry* entry);
         PTrial (const PTrialEntry& entry);
+        PTrial ();
 
         virtual ~PTrial();
 
@@ -39,23 +40,23 @@ class PTrial {
          * Add a new entry to the entries in this trial.
          *
          * This clones the entry and puts it in the correct
-         * vector with log entries.
+         * DArray with log entries.
          */
         void addEntry(const PEntryPtr entry);
 
         /**
-         * returns a vector with specific entrytype
+         * returns a DArray with specific entrytype
          *
-         * Returns a vector with a specific entrytype. If no such
+         * Returns a DArray with a specific entrytype. If no such
          * entry type is added, the PTrial returns an empty 
-         * vector.
+         * DArray.
          */
-        const std::vector<PEyeLogEntry*>& operator[](entrytype type) const;
+        const DArray<PEyeLogEntry*>& operator[](entrytype type) const;
 
         /**
          * Returns all the entries that belong to this trial.
          *
-         * \note the entries in the vector should be freed.
+         * \note the entries in the DArray should be freed.
          */
         PEntryVec getEntries() const;
 
@@ -80,7 +81,7 @@ class PTrial {
          * The trial identifier can be used to identify a specific
          * trial.
          */
-        std::string getIdentifier() const;
+        String getIdentifier() const;
         
         /**
          * Gets the group identifier, specifies a specific trial.
@@ -88,7 +89,7 @@ class PTrial {
          * The trial identifier can be used to identify a specific
          * trial.
          */
-        std::string getGroup()const;
+        String getGroup()const;
 
     private:
 
@@ -100,7 +101,7 @@ class PTrial {
         /**
          * This map contains all entries that belong to this trial.
          */
-        std::map<entrytype, std::vector<PEyeLogEntry*> > m_entries;
+        std::map<entrytype, DArray<PEyeLogEntry*> > m_entries;
 
 };
 
@@ -117,9 +118,9 @@ class PExperiment {
         PExperiment();
         
         /**
-         * Create an experiment from an vector of PEyeLogEntry.
+         * Create an experiment from an DArray of PEyeLogEntry.
          */
-        PExperiment(const std::vector<PEyeLogEntry*>& entries);
+        PExperiment(const DArray<PEyeLogEntry*>& entries);
         
         /**
          * Create an experiment from PEyeLog instance
@@ -154,27 +155,27 @@ class PExperiment {
         /**
          * Gets the trial identifier
          */
-        std::string identifier()const;
+        String identifier()const;
 
         /**
          * Gets the group identifier
          */
-        std::string group()const;
+        String group()const;
     
     private:
 
         /**
-         * initialize a PExperiment with a vector of PEyeLogEntries
+         * initialize a PExperiment with a DArray of PEyeLogEntries
          */
         void initFromEntryVec(const PEntryVec& entries);
 
         /**
          * Data before the first trial is considered meta data
          */
-        std::vector<PEyeLogEntry*>  m_metadata;
+        DArray<PEyeLogEntry*>  m_metadata;
 
         /**
          * All the trials in the experiment.
          */
-        std::vector<PTrial>         m_trials;
+        DArray<PTrial>         m_trials;
 };

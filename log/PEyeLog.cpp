@@ -22,6 +22,7 @@
 
 #include "PEyeLog.h"
 #include "cError.h"
+#include "TypeDefs.h"
 #include <cassert>
 #include <cerrno>
 #include <sstream>
@@ -77,17 +78,19 @@ int readBinaryFix(ifstream& stream, PEyeLogEntry** out, entrytype et) {
 
 int readBinaryMessage(ifstream& stream, PEyeLogEntry** out) {
     double time;
-    uint32_t size;
-    string msg;
+    uint32_t s;
+    String::size_type size;
+    String msg;
 
     assert(*out == nullptr);
     
     if (!stream.read( (char*)&time  , sizeof(time)))
         return errno;
-    if (!stream.read( (char*)&size  , sizeof(size)))
+    if (!stream.read( (char*)&s , sizeof(s)))
         return errno;
+    size = String::size_type(s);
     msg.resize(size);
-    if (!stream.read( (char*) msg.data(), size))
+    if (!stream.read(&msg[0], size))
         return errno;
 
     *out = new PMessageEntry(time, msg);
@@ -132,7 +135,7 @@ PEyeLog::~PEyeLog()
     clear();
 }
 
-int PEyeLog::open(const string& fname)
+int PEyeLog::open(const String& fname)
 {
     m_filename = fname;
     m_file.open(fname.c_str(), fstream::binary|fstream::out);
@@ -173,7 +176,7 @@ void PEyeLog::setEntries(const PEntryVec& entries, bool empty)
     m_entries = entries;
 }
 
-int PEyeLog::read(const string& file, bool clear_content)
+int PEyeLog::read(const String& file, bool clear_content)
 {
     if (clear_content)
         clear();
@@ -193,13 +196,14 @@ int PEyeLog::write(eyelog_format f) const
     }
     else if (f == FORMAT_CSV) {
         for (unsigned i = 0; i < m_entries.size(); ++i) {
-            std::string line;
-            if (i == m_entries.size() -1)
-                line = m_entries[i]->toString() + '\n';
-            else
+            String line;
+            // only last line is without lineterminator.
+            if (i == m_entries.size() -1) 
                 line = m_entries[i]->toString();
+            else
+                line = m_entries[i]->toString() + '\n';
 
-            if (m_file << line) {
+            if (!(m_file << line.c_str())) {
                 return errno;
             }
         }
@@ -220,7 +224,7 @@ const char* PEyeLog::getFilename()const
     return m_filename.c_str();
 }
 
-const std::vector<PEyeLogEntry*>& PEyeLog::getEntries()const
+const DArray<PEyeLogEntry*>& PEyeLog::getEntries()const
 {
     return m_entries;
 }
@@ -230,36 +234,46 @@ const std::vector<PEyeLogEntry*>& PEyeLog::getEntries()const
  */
 
 /**
- * returns the contents of a file in a string
+ * returns the contents of a file in a String
  */
-string readStreamAsString(ifstream& s)
+String readStreamAsString(ifstream& s)
 {
-    string ret;
+    String ret;
     assert(s.tellg() == ifstream::pos_type(0));
     s.seekg(0, s.end);
     streampos size = s.tellg();
     s.seekg(0);
     ret.resize(string::size_type(size));
     s.read(&ret[0], ret.size());
-    return ret;
+    return std::move(ret);
 }
 
 /**
- * returns a vector of strings.
+ * returns a DArray of Strings.
  */
-vector<string> getLines(ifstream& stream)
+DArray<String> getLines(ifstream& stream)
 {
-    vector<string> output;
+    DArray<String> output;
     string buffer;
 
     assert(stream.good());
 
     while (getline(stream, buffer,'\n'))
-        output.push_back(buffer);
+        output.push_back(String(buffer.c_str()));
     return output;
 }
 
-bool is_a_digit(const string& token)
+bool is_a_digit(const String& token)
+{
+    for (int c: token) {
+        if (c < '0' || c > '9')
+            return false;
+    }
+    return true;
+}
+
+// deprecated prefer the overload with String instead.
+bool is_a_digit(const std::string& token)
 {
     for (int c: token) {
         if (c < '0' || c > '9')
@@ -270,13 +284,13 @@ bool is_a_digit(const string& token)
 
 int readAscManual(std::ifstream& stream, PEyeLog* plog)
 {
-    vector<string> lines = getLines(stream);
+    DArray<String> lines = getLines(stream);
     bool isleft = false;
-    std::vector<PEyeLogEntry>::size_type startsize = plog->getEntries().size();
+    DArray<PEyeLogEntry*>::size_type startsize = plog->getEntries().size();
 
     // loops over all lines ignoring those values it doesn't understand
     for (const auto& line : lines) {
-        istringstream stream(line);
+        istringstream stream(line.c_str());
         string token;
 
         stream >> token;
@@ -354,7 +368,13 @@ int readAscManual(std::ifstream& stream, PEyeLog* plog)
             while(msg.size() > 0 && isspace(msg[msg.size()-1]) )//rm trailing whitespace
                 msg.resize(msg.size()-1);
 
-            plog->addEntry(new PMessageEntry(time, msg));
+            plog->addEntry(
+                    new PMessageEntry(
+                        time,
+                        String(&msg[0], &msg[0] + msg.size())
+                        )
+                    );
+
         }
         else if (token == "SAMPLES") {
             string gaze, leftorright;
@@ -421,7 +441,10 @@ int readCsvFormat(std::ifstream& stream, PEyeLog* plog)
                     }
                     std::getline(stream, msg, '\n');
                     plog->addEntry(
-                            new PMessageEntry(time, msg)
+                            new PMessageEntry(
+                                time,
+                                String(&msg[0], &msg[0]+msg.size())
+                                )
                             );
                 }
                 else {
@@ -512,7 +535,7 @@ int writeBinary(std::ofstream& stream, const PEyeLog& l)
     return result;
 }
 
-int readLog(PEyeLog* out, const string& filename) {
+int readLog(PEyeLog* out, const String& filename) {
     ifstream stream;
     int result; 
     stream.open(filename.c_str(), ios::in | ios::binary);

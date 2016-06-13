@@ -20,11 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
-#include<cassert>
-#include<sstream>
-#include"PEyeLogEntry.h"
-
-using namespace std;
+#include <cassert>
+#include <sstream>
+#include "PEyeLogEntry.h"
+#include "TypeDefs.h"
 
 /* ** utility functions * **/
 
@@ -47,7 +46,7 @@ void destroyPEntyVec(PEntryVec& entries)
 
 /* ** PEyeLogEntry * **/
 
-string PEyeLogEntry::m_sep = "\t";
+char PEyeLogEntry::m_sep = '\t';
 
 unsigned PEyeLogEntry::m_precision = 2;
 
@@ -56,12 +55,12 @@ PEyeLogEntry::PEyeLogEntry(entrytype etype, double time)
 {
 }
 
-void PEyeLogEntry::setSeparator(const std::string& sep) {
-    m_sep = sep;
+void PEyeLogEntry::setSeparator(const String& sep) {
+    m_sep = sep[0];
 }
 
-string PEyeLogEntry::getSeparator() {
-    return m_sep;
+String PEyeLogEntry::getSeparator() {
+    return String(m_sep);
 }
 
 void PEyeLogEntry::setPrecision(unsigned p) {
@@ -82,7 +81,7 @@ double PEyeLogEntry::getTime()const {
     return m_time;
 }
 
-int PEyeLogEntry::writeBinary(ofstream& stream) const
+int PEyeLogEntry::writeBinary(std::ofstream& stream) const
 {
     uint16_t type = getEntryType();
     double time = getTime();
@@ -179,6 +178,15 @@ PGazeEntry::PGazeEntry(entrytype t,
     assert(t == LGAZE || t == RGAZE);
 }
 
+PGazeEntry::PGazeEntry(entrytype t, double time, const PCoordinate& c, float pupil)
+    : PEyeLogEntry(t, time),
+      m_x(c.getX()),
+      m_y(c.getY()),
+      m_pupil(pupil)
+
+{
+}
+
 PGazeEntry::PGazeEntry(const PGazeEntry& other)
     : PEyeLogEntry(other.getEntryType(), other.getTime()),
       m_x(other.m_x),
@@ -192,22 +200,22 @@ PEyeLogEntry* PGazeEntry::clone() const
     return new PGazeEntry(*this);
 }
 
-string PGazeEntry::toString()const
+String PGazeEntry::toString()const
 {
-    stringstream stream;
-    stream.setf(ios::fixed);
+    std::stringstream stream;
+    stream.setf(std::ios::fixed);
     stream.precision(m_precision);
-    const string sep(getSeparator());
+    const char sep = getSeparator()[0];
 
     stream << int(getEntryType()) << sep <<
         getTime() << sep <<
         m_x << sep <<
         m_y << sep <<
         m_pupil;
-    return stream.str();
+    return String(stream.str().c_str());
 }
 
-int PGazeEntry::writeBinary(ofstream& stream)const
+int PGazeEntry::writeBinary(std::ofstream& stream)const
 {
     int ret;
     if ((ret = PEyeLogEntry::writeBinary(stream)) != 0)
@@ -304,12 +312,12 @@ PEyeLogEntry* PFixationEntry::clone()const
     return new PFixationEntry(*this);
 }
 
-string PFixationEntry::toString() const
+String PFixationEntry::toString() const
 {
-    stringstream stream;
-    stream.setf(ios::fixed);
+    std::stringstream stream;
+    stream.setf(std::ios::fixed);
     stream.precision(m_precision);
-    const string sep(getSeparator());
+    const char sep = getSeparator()[0];
 
     stream << int(getEntryType()) << sep <<
               getTime() << sep <<
@@ -317,10 +325,10 @@ string PFixationEntry::toString() const
               m_x << sep <<
               m_y;
 
-    return stream.str();
+    return String(stream.str().c_str());
 }
 
-int PFixationEntry::writeBinary(ofstream& stream) const
+int PFixationEntry::writeBinary(std::ofstream& stream) const
 {
     int ret;
     if ((ret = PEyeLogEntry::writeBinary(stream)) != 0)
@@ -394,7 +402,7 @@ void PFixationEntry::setDuration(double dur)
 }
 
 PMessageEntry::PMessageEntry(double time,
-                             const string& msg
+                             const String& msg
                              )
     : PEyeLogEntry(MESSAGE, time),
       m_message(msg)
@@ -412,21 +420,21 @@ PEyeLogEntry* PMessageEntry::clone()const
     return new PMessageEntry(*this);
 }
 
-string PMessageEntry::toString()const
+String PMessageEntry::toString()const
 {
-    stringstream stream;
-    stream.setf(ios::fixed);
+    std::stringstream stream;
+    stream.setf(std::ios::fixed);
     stream.precision(m_precision);
-    const string sep(getSeparator());
+    const char sep = getSeparator()[0];
 
     stream << int(getEntryType()) << sep <<
         getTime() << sep <<
-        m_message;
+        m_message.c_str();
 
-    return stream.str();
+    return String(stream.str().c_str());
 }
 
-int PMessageEntry::writeBinary(ofstream& stream) const
+int PMessageEntry::writeBinary(std::ofstream& stream) const
 {
     int ret;
     uint32_t size = m_message.size();
@@ -451,12 +459,12 @@ int PMessageEntry::compare(const PMessageEntry& other)const
         return 0;
 }
 
-string PMessageEntry::getMessage() const
+String PMessageEntry::getMessage() const
 {
     return m_message;
 }
 
-void PMessageEntry::setMessage(const string& msg)
+void PMessageEntry::setMessage(const String& msg)
 {
     m_message = msg;
 }
@@ -494,12 +502,12 @@ PEyeLogEntry* PSaccadeEntry::clone()const
     return new PSaccadeEntry(*this);
 }
 
-string PSaccadeEntry::toString() const
+String PSaccadeEntry::toString() const
 {
-    stringstream stream;
-    stream.setf(ios::fixed);
+    std::stringstream stream;
+    stream.setf(std::ios::fixed);
     stream.precision(m_precision);
-    const string sep(getSeparator());
+    const char sep = getSeparator()[0];
 
     stream << int(getEntryType()) << sep <<
               getTime() << sep <<
@@ -509,10 +517,10 @@ string PSaccadeEntry::toString() const
               m_x2 << sep <<
               m_y2;
 
-    return stream.str();
+    return String(stream.str().c_str());
 }
 
-int PSaccadeEntry::writeBinary(ofstream& stream) const
+int PSaccadeEntry::writeBinary(std::ofstream& stream) const
 {
     int ret;
 
@@ -632,48 +640,55 @@ void PSaccadeEntry::setDuration(double time)
 
 
 PTrialEntry::PTrialEntry(double time,
-                         const std::string& identifier,
-                         const std::string& group
+                         const String& identifier,
+                         const String& group
                          )
-    : PEyeLogEntry(TRIAL, time),
-      m_identifier(identifier),
-      m_group(group)
+    :
+        PEyeLogEntry(TRIAL, time),
+        m_identifier(identifier),
+        m_group(group)
 {
 }
 
-void PTrialEntry::setIdentifier(const std::string& identifier)
+PTrialEntry::PTrialEntry()
+    :
+        PEyeLogEntry(TRIAL, 0)
+{
+}
+
+void PTrialEntry::setIdentifier(const String& identifier)
 {
     m_identifier = identifier;
 }
 
-void PTrialEntry::setGroup(const string& group)
+void PTrialEntry::setGroup(const String& group)
 {
     m_group = group;
 }
 
-string PTrialEntry::getIdentifier()const
+String PTrialEntry::getIdentifier()const
 {
     return m_identifier;
 }
 
-string PTrialEntry::getGroup()const
+String PTrialEntry::getGroup()const
 {
     return m_group;
 }
 
-string PTrialEntry::toString()const
+String PTrialEntry::toString()const
 {
-    stringstream stream;
-    stream.setf(ios::fixed);
+    std::stringstream stream;
+    stream.setf(std::ios::fixed);
     stream.precision(m_precision);
-    const string sep(getSeparator());
+    const char sep = getSeparator()[0];
 
     stream << int(getEntryType()) << sep <<
               getTime()           << sep <<
-              m_identifier        << sep <<
-              m_group;
+              m_identifier.c_str()<< sep <<
+              m_group.c_str();
 
-    return stream.str();
+    return String(stream.str().c_str());
 }
 
 PEntryPtr PTrialEntry::clone()const
@@ -681,7 +696,7 @@ PEntryPtr PTrialEntry::clone()const
     return new PTrialEntry(*this);
 }
 
-int PTrialEntry::writeBinary(ofstream& stream) const
+int PTrialEntry::writeBinary(std::ofstream& stream) const
 {
     int ret;
     uint32_t identifier_size = m_identifier.size();
@@ -726,17 +741,17 @@ PTrialStartEntry::PTrialStartEntry(double time)
 {
 }
 
-std::string PTrialStartEntry::toString() const
+String PTrialStartEntry::toString() const
 {
-    stringstream stream;
-    stream.setf(ios::fixed);
+    std::stringstream stream;
+    stream.setf(std::ios::fixed);
     stream.precision(m_precision);
-    const string sep(getSeparator());
+    const char sep = getSeparator()[0];
 
     stream << int(getEntryType()) << sep <<
               getTime();
 
-    return stream.str();
+    return String(stream.str().c_str());
 }
 
 int PTrialStartEntry::compare(const PTrialStartEntry& other) const
@@ -755,17 +770,17 @@ PTrialEndEntry::PTrialEndEntry(double time)
 {
 }
 
-std::string PTrialEndEntry::toString() const
+String PTrialEndEntry::toString() const
 {
-    stringstream stream;
-    stream.setf(ios::fixed);
+    std::stringstream stream;
+    stream.setf(std::ios::fixed);
     stream.precision(m_precision);
-    const string sep(getSeparator());
+    const char sep = getSeparator()[0];
 
     stream << int(getEntryType()) << sep <<
               getTime();
 
-    return stream.str();
+    return String(stream.str().c_str());
 }
 
 int PTrialEndEntry::compare(const PTrialEndEntry& other) const

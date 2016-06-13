@@ -1,7 +1,7 @@
 /*
- * EyeLog.h
+ * Typdefs.h
  *
- * Public header that provides Logging for Eyetrackers.
+ * Public header that provides typedefs for types that are used often.
  *
  * Copyright (c) 2016 M.J.A. Duijndam.
  *
@@ -19,17 +19,15 @@
  * License along with this library; if not, see Licenses at www.gnu.org.
  */
 
-#ifndef EYELOG_H
-#define EYELOG_H
+#if !defined (TYPEDEFS_H)
+#define TYPEDEFS_H 1
 
-#include "constants.h"
-#include "DArray.h"
-#include "Shapes.h"
+//The one and only string type for libeye.
+#include "BaseString.h"
+typedef BaseString<char> String;
+
 #include "PEyeLogEntry.h"
-#include "PCoordinate.h"
-#include "PExperiment.h"
-#include "PEyeLog.h"
-#include "TypeDefs.h"
-#include "cError.h"
+#include "DArray.h"
+// insert typedef to all log entries here.
 
 #endif

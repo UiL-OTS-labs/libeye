@@ -58,8 +58,8 @@ std::string usage = "%s [options] <intput> [output]\n\
         -b      write in binary mode output must be specified.\n\
         -csv    write in csv form\n";
 
-std::string input;
-std::string output;
+String input;
+String output;
 
 bool write_csv(true);
 bool write_binary(false);
@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
     parse_cmd(argc, argv);
     assert (write_csv != write_binary);
 
-    EyeLog log;
+    PEyeLog log;
     ret = log.read(input);
     if (ret) {
         cerr << "Unable to open log: " << eyelog_error(ret) << endl;
@@ -128,11 +128,11 @@ int main(int argc, char **argv) {
         SET_BINARY_MODE(stdout); 
         auto entries = log.getEntries();
         for (const auto& e : entries)
-            cout << e.toString() << '\n';
+            cout << e->toString().c_str() << '\n';
     } else {
         ret = log.open(output);
         if (ret) {
-            cerr << "Unable to open " << output << ": "<<
+            cerr << "Unable to open " << output.c_str() << ": "<<
                 eyelog_error(ret) << endl;
             return EXIT_FAILURE;
         }

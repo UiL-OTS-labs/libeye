@@ -22,9 +22,9 @@
 #ifndef PEYELOGENTRY_H
 #define PEYELOGENTRY_H
 
-#include <string>
-#include <vector>
 #include <fstream>
+#include "TypeDefs.h"
+#include "DArray.h"
 #include "constants.h"
 #include "PCoordinate.h"
 
@@ -39,15 +39,15 @@ class PStimulusEntry;
 class PTrialEntry;
 
 typedef PEyeLogEntry* PEntryPtr;
-typedef std::vector<PEntryPtr> PEntryVec;
+typedef DArray<PEntryPtr> PEntryVec;
 
 /**
- * copy a vector with PEntryPtr.
+ * copy a DArray with PEntryPtr.
  */
 PEntryVec copyPEntryVec(const PEntryVec& entries);
 
 /**
- * destroys the contents of a vector with PEntryPtr, the vector self 
+ * destroys the contents of a DArray with PEntryPtr, the DArray self 
  * remains intact.
  */
 void destroyPEntyVec(PEntryVec& entries);
@@ -65,9 +65,9 @@ public :
     virtual PEyeLogEntry* clone() const =0;
 
     /**
-     * \returns a PEyeLogEntry in string form.
+     * \returns a PEyeLogEntry in String form.
      */
-    virtual std::string toString()const = 0;
+    virtual String toString()const = 0;
     
     /**
      * Write this entry to a ofstream.
@@ -111,14 +111,14 @@ public :
      * set the separator between field in a csv log.
      * 
      * This sets the separator used between the fields in a csv log
-     * \note the separator may not be present in an string.
+     * \note the separator may not be present in an String.
      */
-    static void setSeparator(const std::string& c);
+    static void setSeparator(const String& c);
 
     /**
      * Get the current separator.
      */
-    static std::string getSeparator();
+    static String getSeparator();
 
     /**
      * sets precision used in the output(the number of decimals behind the dot).
@@ -144,12 +144,12 @@ public :
 
 private :
 
-    entrytype       m_type;     // the type of message
-    double          m_time;     // time on eyetracker.
+    entrytype           m_type;     // the type of message
+    double              m_time;     // time on eyetracker.
 
 protected :
-    static std::string m_sep;        // separates field in the output.
-    static unsigned    m_precision;  // uses as precision in the output.
+    static char         m_sep;      // separates field in the output.
+    static unsigned     m_precision;// uses as precision in the output.
 };
 
 class PGazeEntry : public PEyeLogEntry {
@@ -164,9 +164,9 @@ public :
     PEyeLogEntry* clone() const;
 
     /**
-     * @return a string that represents the entry type
+     * @return a String that represents the entry type
      */
-    virtual std::string toString() const;
+    virtual String toString() const;
 
     /**
      * write an entry to and output stream.
@@ -249,7 +249,7 @@ public:
 
     PEyeLogEntry* clone() const;
     
-    virtual std::string toString() const;
+    virtual String toString() const;
     
     virtual int writeBinary(std::ofstream& stream) const;
 
@@ -282,17 +282,17 @@ class PMessageEntry : public PEyeLogEntry {
     friend class PEyeLogEntry;
 
 public :
-    PMessageEntry (double eyetime, const std::string& Message);
+    PMessageEntry (double eyetime, const String& Message);
     PMessageEntry (const PMessageEntry& messageentry);
 
     PEyeLogEntry* clone()const;
 
-    virtual std::string toString() const;
+    virtual String toString() const;
     
     virtual int writeBinary(std::ofstream& stream) const;
 
-    std::string getMessage()const;
-    void setMessage(const std::string& message);
+    String getMessage()const;
+    void setMessage(const String& message);
 
 private:
     /**
@@ -300,7 +300,7 @@ private:
      */
     virtual int compare(const PMessageEntry& other)const;
 
-    std::string  m_message;
+    String  m_message;
 };
 
 class PSaccadeEntry : public PEyeLogEntry {
@@ -322,7 +322,7 @@ public:
 
     PEyeLogEntry* clone()const;
 
-    virtual std::string toString() const;
+    virtual String toString() const;
     
     virtual int writeBinary(std::ofstream& stream) const;
 
@@ -364,11 +364,15 @@ public:
      * Create a PTrialEntry instance
      */
     PTrialEntry(double time,
-                const std::string& identifier,
-                const std::string& group
+                const String& identifier,
+                const String& group
                 );
+    /**
+     * Create an empty PTrialEntry
+     */
+    PTrialEntry();
     
-    virtual std::string toString()const;
+    virtual String toString()const;
     virtual PEntryPtr clone()const;
     virtual int writeBinary(std::ofstream& stream)const;
 
@@ -378,7 +382,7 @@ public:
      * Sets the trial identifier.
      * \param identifier an identifier.
      */
-    void setIdentifier(const std::string& identifier);
+    void setIdentifier(const String& identifier);
 
     /**
      * Sets the trial group.
@@ -386,17 +390,17 @@ public:
      * Sets the trial group.
      * \param group a group.
      */
-    void setGroup(const std::string& group);
+    void setGroup(const String& group);
     
     /**
      * get the trial identifier
      */
-    std::string getIdentifier()const;
+    String getIdentifier()const;
     
     /**
      * get the group identifier
      */
-    std::string getGroup()const;
+    String getGroup()const;
 
 private:
     /**
@@ -404,8 +408,8 @@ private:
      */
     virtual int compare(const PTrialEntry& other) const;
 
-    std::string m_identifier;
-    std::string m_group;
+    String m_identifier;
+    String m_group;
 };
 
 /**
@@ -420,7 +424,7 @@ public:
      */
     PTrialStartEntry(double time);
 
-    virtual std::string toString()const;
+    virtual String toString()const;
     virtual PEntryPtr clone()const;
 private:
     /**
@@ -441,7 +445,7 @@ public:
      */
     PTrialEndEntry(double time);
     
-    virtual std::string toString()const;
+    virtual String toString()const;
     virtual PEntryPtr clone()const;
 private:
     /**

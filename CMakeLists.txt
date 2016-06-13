@@ -28,7 +28,7 @@ set (EYELOG_STATIC_LIB
 
 
 if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS ${CXX_FLAGS} "-std=c++0x -Wall -Wextra -pedantic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wall -Wextra -pedantic")
 endif()
 
 # setting of general options

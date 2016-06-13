@@ -33,6 +33,11 @@ PTrial::PTrial(const PTrialEntry& entry)
 {
 }
 
+PTrial::PTrial()
+    : m_entry()
+{
+}
+
 PTrial::~PTrial()
 {
 }
@@ -47,7 +52,7 @@ void PTrial::addEntry(const PEntryPtr entry)
     m_entries[t].push_back(entry->clone());
 }
 
-const std::vector<PEyeLogEntry*>& PTrial::operator[](entrytype t) const
+const DArray<PEyeLogEntry*>& PTrial::operator[](entrytype t) const
 {
     const static PEntryVec empty; // empty return value.
     const auto it = m_entries.find(t);
@@ -109,12 +114,12 @@ bool PTrial::operator!=(const PTrial& other) const
     return ! (*this == other);
 }
 
-std::string PTrial::getIdentifier() const
+String PTrial::getIdentifier() const
 {
     return m_entry.getIdentifier();
 }
 
-std::string PTrial::getGroup() const
+String PTrial::getGroup() const
 {
     return m_entry.getGroup();
 }
@@ -123,7 +128,7 @@ PExperiment::PExperiment()
 {
 }
 
-PExperiment::PExperiment(const std::vector<PEyeLogEntry*>& entries)
+PExperiment::PExperiment(const DArray<PEyeLogEntry*>& entries)
 {
     initFromEntryVec(entries);
 }
