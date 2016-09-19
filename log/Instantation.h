@@ -1,7 +1,7 @@
 /*
- * EyeLog.h
+ * Instantation.h
  *
- * Public header that provides Logging for Eyetrackers.
+ * Public header that provides instantations of templated types.
  *
  * Copyright (c) 2016 M.J.A. Duijndam.
  *
@@ -19,17 +19,21 @@
  * License along with this library; if not, see Licenses at www.gnu.org.
  */
 
-#ifndef EYELOG_H
-#define EYELOG_H
+/**
+ * \file Instantation.h declares the existance of some templated types.
+ */
 
-#include "constants.h"
+#if !defined(EYE_INSTANTATION_H)
+#   define EYE_INSTANTATION_H 1
+
+
+#include "BaseString.h"
 #include "DArray.h"
-#include "Shapes.h"
 #include "PEyeLogEntry.h"
-#include "PCoordinate.h"
-#include "PExperiment.h"
-#include "PEyeLog.h"
-#include "TypeDefs.h"
-#include "cError.h"
+
+extern BaseString<char>;
+extern DArray<char>;
+
+extern DArray<PEntryPtr>;
 
 #endif

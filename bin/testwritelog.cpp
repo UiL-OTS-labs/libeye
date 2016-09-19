@@ -39,16 +39,16 @@ int main(int argc, char **argv) {
 
     int ret;
 
-    string output;
+    String output;
 
     if (argc != 3) {
         fprintf(stderr, usage.c_str(), argv[0]);
         return 0;
     }
 
-    output= argv[2];
+    output = argv[2];
 
-    EyeLog log;
+    PEyeLog log;
     ret = log.read(argv[1]);
 
     if (ret == 0) {

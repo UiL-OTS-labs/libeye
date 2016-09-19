@@ -9,24 +9,31 @@ set (EYELOG_STATIC_LIB
 
 # source files to build the library.
 set (LOG_SOURCES
+        BaseString.cpp
+        DArray.cpp
+        Instantation.cpp
         PEyeLog.cpp
         PEyeLogEntry.cpp
         PExperiment.cpp
         PCoordinate.cpp
-        cEyeLog.cpp
+        #cEyeLog.cpp
         cError.cpp
         )
 
 # headers to build the library
 set (LOG_HEADERS
+        BaseString.h
+        constants.h
+        DArray.h
+        Instantation.h
         PEyeLog.h
         PEyeLogEntry.h
         PExperiment.h
         PCoordinate.h
         cEyeLog.h
         cError.h
-        constants.h
         Shapes.h
+        TypeDefs.h
         )
 
 # headers needed to use the library.

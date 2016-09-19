@@ -23,8 +23,8 @@
 #ifndef PEYE_LOG_H
 #define PEYE_LOG_H
 
-#include <string>
-#include <vector>
+#include "TypeDefs.h"
+#include "DArray.h"
 #include <fstream>
 #include "PEyeLogEntry.h"
 #include "constants.h"
@@ -37,7 +37,7 @@
  * @param out, will be initialized.
  * @param filename, the file to open.
  */
-int  readLog(PEyeLog* out, const std::string& filename);
+int  readLog(PEyeLog* out, const String& filename);
 
 
 /**
@@ -57,7 +57,7 @@ public :
      * 
      * @return 0 if succesfull, -1 if not.
      */
-    int open(const std::string& fname);
+    int open(const String& fname);
 
     /**
      * close the log file
@@ -99,7 +99,7 @@ public :
      *
      * @return 0 or an error from errno (use eg strerror to examine).
      */
-    int read(const std::string& filename, bool clear_content=true);
+    int read(const String& filename, bool clear_content=true);
 
     /**
      * Checks whether the file is open.
@@ -115,7 +115,7 @@ public :
     /**
      * Gets all logentries.
      */
-    const std::vector<PEyeLogEntry*>& getEntries()const;
+    const DArray<PEyeLogEntry*>& getEntries()const;
 
     /**
      * Sets the logentries and optionally clear the existing.
@@ -123,19 +123,19 @@ public :
      * Set the logentries and make sure they are sorted on
      * time and entrytype.
      */
-    void setEntries(const std::vector<PEyeLogEntry*>& entries,
+    void setEntries(const DArray<PEyeLogEntry*>& entries,
                     bool clear=true
                     );
 
 private:
 
-    std::vector<PEyeLogEntry*>  m_entries;
+    DArray<PEyeLogEntry*>   m_entries;
 
-    mutable std::ofstream       m_file;
+    mutable std::ofstream   m_file;
 
-    std::string                 m_filename;
-    bool                        m_isopen;
-    bool                        m_writebinary;
+    String                  m_filename;
+    bool                    m_isopen;
+    bool                    m_writebinary;
 };
 
 #endif
