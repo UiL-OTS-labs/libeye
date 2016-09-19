@@ -26,3 +26,8 @@
 *.exe
 *.out
 *.app
+
+# directories
+Debug/
+Release/
+doxydoc/
