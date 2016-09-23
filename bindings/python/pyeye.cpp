@@ -15,6 +15,17 @@ extern "C" {
 const char* module_name = "pyeye";
 const char* module_doc  = "The pyeye module is a pythonic wrapper around libeye";
 
+
+/***** utilities *****/
+
+static bool is_simple_numeric(PyObject* obj)
+{
+    return PyInt_Check(obj) || PyFloat_Check(obj);
+}
+
+#define PRIV_POINTER self->m_parent.m_private
+
+
 /***** Module objects *****/
 
 static PyObject*    PyEyeError = NULL;
@@ -83,15 +94,6 @@ void pyeye_module_add_constants(PyObject* module) {
     PyModule_AddObject(module, "FORMAT_BINARY"  , PyEyeFORMATBINARY);
     PyModule_AddObject(module, "FORMAT_CSV"     , PyEyeFORMATCSV);
 }
-
-/***** utilities *****/
-
-static bool is_simple_numeric(PyObject* obj)
-{
-    return PyInt_Check(obj) || PyFloat_Check(obj);
-}
-
-#define PRIV_POINTER self->m_parent.m_private
 
 /***** EyeLogEntry *****/
 
@@ -767,7 +769,7 @@ static PyTypeObject FixationEntryType = {
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,         /*tp_flags*/
-    "A FixationEntry represents the gaze in an EyeLog.",
+    "A FixationEntry represents the a fixation in an EyeLog.",
                                 /*tp_doc*/
     0,		                    /*tp_traverse */
     0,		                    /*tp_clear */
@@ -906,7 +908,8 @@ static PyTypeObject MessageEntryType = {
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,         /*tp_flags*/
-    "A FixationEntry represents the gaze in an EyeLog.",
+    "A MessageEntry gives opportunities to present some "
+        "metadata in an EyeLog.",
                                 /*tp_doc*/
     0,		                    /*tp_traverse */
     0,		                    /*tp_clear */
@@ -923,6 +926,347 @@ static PyTypeObject MessageEntryType = {
     0,                          /*tp_descr_set */
     0,                          /*tp_dictoffset */
     (initproc)MessageEntry_init,   /*tp_init */
+    0,
+    0,
+};
+
+/***** SaccadeEntry *****/
+
+typedef struct {
+    EyeLogEntry m_parent;
+} SaccadeEntry;
+
+static int
+SaccadeEntry_init(SaccadeEntry* self, PyObject* args, PyObject* kwds)
+{
+    PSaccadeEntry* saccade = NULL;
+    entrytype entry;
+    double time, duration;
+    float x1, y1, x2, y2;
+
+    static const char* kwlist[] = {
+        "entry",
+        "time",
+        "duration",
+        "x1",
+        "y1",
+        "x2",
+        "y2",
+        NULL
+    };
+
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, "iddffff",
+                const_cast<char**>(kwlist),
+                &entry,
+                &time,
+                &duration,
+                &x1,
+                &y1,
+                &x2,
+                &y2
+                )
+      )
+        return -1;
+    if (entry != LSAC && entry != RSAC && entry != AVGSAC) {
+        PyErr_SetString(PyExc_TypeError,
+                "Entry must be one of LSAC, RSAC or AVGSAC");
+        return -1;
+    }
+    
+    try {
+        saccade = new PSaccadeEntry(entry, time, duration, x1, y1, x2, y2);
+    } catch(std::bad_alloc& e) {
+        PyErr_NoMemory();
+        return -1;
+    } catch(...) {
+        PyErr_SetString(PyExc_RuntimeError, "SaccadeEntry_init: unknown error");
+        return -1;
+    }
+
+    self->m_parent.m_private  = static_cast<PEntryPtr>(saccade);
+    return 0;
+}
+
+static PyObject*
+SaccadeEntry_getDuration(SaccadeEntry* self)
+{
+    PSaccadeEntry* sac = static_cast<PSaccadeEntry*>(PRIV_POINTER);
+    return PyFloat_FromDouble(sac->getDuration());
+}
+
+static int
+SaccadeEntry_setDuration(SaccadeEntry* self, PyObject* args)
+{
+    double dur;
+    if (!PyArg_ParseTuple(args, "d", &dur))
+        return -1;
+    static_cast<PSaccadeEntry*>(PRIV_POINTER)->setDuration(dur);
+    return 0;
+}
+
+static PyObject*
+SaccadeEntry_getX1(SaccadeEntry* self)
+{
+    PSaccadeEntry* sac = static_cast<PSaccadeEntry*>(PRIV_POINTER);
+    return PyFloat_FromDouble(sac->getX1());
+}
+
+static int
+SaccadeEntry_setX1(SaccadeEntry* self, PyObject* args)
+{
+    double x1;
+    if (!PyArg_ParseTuple(args, "f", &x1))
+        return -1;
+    static_cast<PSaccadeEntry*>(PRIV_POINTER)->setX1(x1);
+    return 0;
+}
+
+static PyObject*
+SaccadeEntry_getY1(SaccadeEntry* self)
+{
+    PSaccadeEntry* sac = static_cast<PSaccadeEntry*>(PRIV_POINTER);
+    return PyFloat_FromDouble(sac->getY1());
+}
+
+static int
+SaccadeEntry_setY1(SaccadeEntry* self, PyObject* args)
+{
+    double y1;
+    if (!PyArg_ParseTuple(args, "f", &y1))
+        return -1;
+    static_cast<PSaccadeEntry*>(PRIV_POINTER)->setY1(y1);
+    return 0;
+}
+
+static PyObject*
+SaccadeEntry_getX2(SaccadeEntry* self)
+{
+    PSaccadeEntry* sac = static_cast<PSaccadeEntry*>(PRIV_POINTER);
+    return PyFloat_FromDouble(sac->getX2());
+}
+
+static int
+SaccadeEntry_setX2(SaccadeEntry* self, PyObject* args)
+{
+    double x2;
+    if (!PyArg_ParseTuple(args, "f", &x2))
+        return -1;
+    static_cast<PSaccadeEntry*>(PRIV_POINTER)->setX2(x2);
+    return 0;
+}
+
+static PyObject*
+SaccadeEntry_getY2(SaccadeEntry* self)
+{
+    PSaccadeEntry* sac = static_cast<PSaccadeEntry*>(PRIV_POINTER);
+    return PyFloat_FromDouble(sac->getY2());
+}
+
+static int
+SaccadeEntry_setY2(SaccadeEntry* self, PyObject* args)
+{
+    double y2;
+    if (!PyArg_ParseTuple(args, "f", &y2))
+        return -1;
+    static_cast<PSaccadeEntry*>(PRIV_POINTER)->setY2(y2);
+    return 0;
+}
+
+static PyMethodDef SaccadeEntry_methods[] = {
+    {"getDuration", (PyCFunction) SaccadeEntry_getDuration, METH_NOARGS,
+        "Returns the duration of the saccade."},
+    {"setDuration", (PyCFunction) SaccadeEntry_setDuration, METH_VARARGS,
+        "Sets the duration of the saccade."},
+    {"getX1", (PyCFunction) SaccadeEntry_getX1, METH_NOARGS,
+        "Returns the x coordinate of the starting point of the saccade."},
+    {"setX1", (PyCFunction) SaccadeEntry_setX1, METH_VARARGS,
+        "Sets the x coordinate of the starting point of the saccade."},
+    {"getY1", (PyCFunction) SaccadeEntry_getY1, METH_NOARGS,
+        "Returns the y coordinate of the starting point of the saccade."},
+    {"setX1", (PyCFunction) SaccadeEntry_setY1, METH_VARARGS,
+        "Sets the y coordinate of the starting point of the saccade."},
+    {"getX2", (PyCFunction) SaccadeEntry_getX2, METH_NOARGS,
+        "Returns the x coordinate of the end point of the saccade."},
+    {"setX2", (PyCFunction) SaccadeEntry_setX2, METH_VARARGS,
+        "Sets the x coordinate of the end point of the saccade."},
+    {"getY2", (PyCFunction) SaccadeEntry_getY2, METH_NOARGS,
+        "Returns the y coordinate of the end point of the saccade."},
+    {"setX2", (PyCFunction) SaccadeEntry_setY2, METH_VARARGS,
+        "Sets the y coordinate of the end point of the saccade."},
+    {NULL}
+};
+
+static PyObject*
+SaccadeEntry_DurationGetter(SaccadeEntry* self, void*)
+{
+    return PyFloat_FromDouble(
+            static_cast<PSaccadeEntry*>(PRIV_POINTER)->getDuration()
+            );
+}
+
+static int
+SaccadeEntry_DurationSetter(SaccadeEntry* self, PyObject* value, void*)
+{
+    double dur;
+    if (!PyFloat_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "Duration must be a float.");
+        return -1;
+    }
+    dur = PyFloat_AsDouble(value);
+    static_cast<PSaccadeEntry*>(PRIV_POINTER)->setDuration(dur);
+    return 0;
+}
+
+static PyObject*
+SaccadeEntry_X1Getter(SaccadeEntry* self, void*)
+{
+    return PyFloat_FromDouble(
+            static_cast<PSaccadeEntry*>(PRIV_POINTER)->getX1()
+            );
+}
+
+static int
+SaccadeEntry_X1Setter(SaccadeEntry* self, PyObject* value, void*)
+{
+    float x1;
+    if (!PyFloat_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "x1 must be a float.");
+        return -1;
+    }
+
+    x1 = PyFloat_AsDouble(value);
+
+    static_cast<PSaccadeEntry*>(PRIV_POINTER)->setX1(x1);
+    return 0;
+}
+
+static PyObject*
+SaccadeEntry_Y1Getter(SaccadeEntry* self, void*)
+{
+    return PyFloat_FromDouble(
+            static_cast<PSaccadeEntry*>(PRIV_POINTER)->getY1()
+            );
+}
+
+static int
+SaccadeEntry_Y1Setter(SaccadeEntry* self, PyObject* value, void*)
+{
+    float y1;
+    if (!PyFloat_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "y1 must be a float.");
+        return -1;
+    }
+
+    y1 = PyFloat_AsDouble(value);
+
+    static_cast<PSaccadeEntry*>(PRIV_POINTER)->setY1(y1);
+    return 0;
+}
+
+static PyObject*
+SaccadeEntry_X2Getter(SaccadeEntry* self, void*)
+{
+    return PyFloat_FromDouble(
+            static_cast<PSaccadeEntry*>(PRIV_POINTER)->getX2()
+            );
+}
+
+static int
+SaccadeEntry_X2Setter(SaccadeEntry* self, PyObject* value, void*)
+{
+    float x2;
+    if (!PyFloat_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "x2 must be a float.");
+        return -1;
+    }
+
+    x2 = PyFloat_AsDouble(value);
+
+    static_cast<PSaccadeEntry*>(PRIV_POINTER)->setX2(x2);
+    return 0;
+}
+
+static PyObject*
+SaccadeEntry_Y2Getter(SaccadeEntry* self, void*)
+{
+    return PyFloat_FromDouble(
+            static_cast<PSaccadeEntry*>(PRIV_POINTER)->getY2()
+            );
+}
+
+static int
+SaccadeEntry_Y2Setter(SaccadeEntry* self, PyObject* value, void*)
+{
+    float y2;
+    if (!PyFloat_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "y2 must be a float.");
+        return -1;
+    }
+
+    y2 = PyFloat_AsDouble(value);
+
+    static_cast<PSaccadeEntry*>(PRIV_POINTER)->setY2(y2);
+    return 0;
+}
+
+static PyGetSetDef SaccadeEntry_getset[] {
+    {"duration", (getter)SaccadeEntry_DurationGetter,
+        (setter)SaccadeEntry_DurationSetter,
+        "The duration of the saccade.", NULL},
+    {"x1", (getter)SaccadeEntry_X1Getter,
+        (setter)SaccadeEntry_X1Setter,
+        "The start x coordinate of the saccade.", NULL},
+    {"y1", (getter)SaccadeEntry_Y1Getter,
+        (setter)SaccadeEntry_Y1Setter,
+        "The start y coordinate of the saccade.", NULL},
+    {"x2", (getter)SaccadeEntry_X2Getter,
+        (setter)SaccadeEntry_X2Setter,
+        "the end x coordinate of the saccade.", NULL},
+    {"y2", (getter)SaccadeEntry_Y2Getter,
+        (setter)SaccadeEntry_Y2Setter,
+        "The end y coordinate of the saccade.", NULL},
+    { NULL }
+};
+
+static PyTypeObject SaccadeEntryType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                          /*ob_size*/   // for binary compatibility
+    "pyeye.SaccadeEntry",       /*tp_name*/
+    sizeof(SaccadeEntry),       /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    0,                          /*tp_dealloc*/
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_compare*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash */
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,         /*tp_flags*/
+    "A SaccadeEntry represents one saccade in an EyeLog.",
+                                /*tp_doc*/
+    0,		                    /*tp_traverse */
+    0,		                    /*tp_clear */
+    0,		                    /*tp_richcompare */
+    0,		                    /*tp_weaklistoffset */
+    0,		                    /*tp_iter */
+    0,		                    /*tp_iternext */
+    SaccadeEntry_methods,       /*tp_methods */
+    0,                          /*tp_members */
+    SaccadeEntry_getset,        /*tp_getset */
+    0,                          /*tp_base */
+    0,                          /*tp_dict */
+    0,                          /*tp_descr_get */
+    0,                          /*tp_descr_set */
+    0,                          /*tp_dictoffset */
+    (initproc)SaccadeEntry_init,   /*tp_init */
     0,
     0,
 };
@@ -957,6 +1301,10 @@ initpyeye(void)
     if (PyType_Ready(&MessageEntryType) < 0)
         return;
 
+    SaccadeEntryType.tp_base = &EyeLogEntryType;
+    if (PyType_Ready(&MessageEntryType) < 0)
+        return;
+
     m = Py_InitModule3(module_name, PyEyeMethods, module_doc);
     if(m == NULL)
         return;
@@ -973,6 +1321,9 @@ initpyeye(void)
     Py_INCREF(&MessageEntryType);
     PyModule_AddObject(m, "MessageEntry", (PyObject*) &MessageEntryType);
 
+    Py_INCREF(&SaccadeEntryType);
+    PyModule_AddObject(m, "SaccadeEntry", (PyObject*) &SaccadeEntryType);
+    
     pyeye_module_add_constants(m);
 
 //    PyEyeError = PyErr_NewException("pyeye.PyEyeError", NULL, NULL);
