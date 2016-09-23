@@ -4,6 +4,10 @@
 
 #include <log/EyeLog.h>
 
+// python takes many strings as char* therefore we turn -Wwrite-strings off.
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,24 +21,24 @@ static PyObject*    PyEyeError = NULL;
 
 /* constants */
 //GazeEntries
-static PyObject*    PyEyeLGaze      = NULL;
-static PyObject*    PyEyeRGaze      = NULL;
-static PyObject*    PyEyeLFix       = NULL;
-static PyObject*    PyEyeRFix       = NULL;
-static PyObject*    PyEyeStim       = NULL;
-static PyObject*    PyEyeMessage    = NULL;
-static PyObject*    PyEyeLSac       = NULL;
-static PyObject*    PyEyeRSac       = NULL;
-static PyObject*    PyEyeAvgGaze    = NULL;
-static PyObject*    PyEyeAvgFix     = NULL;
-static PyObject*    PyEyeAvgSac     = NULL;
-static PyObject*    PyEyeTrial      = NULL;
-static PyObject*    PyEyeTrialStart = NULL;
-static PyObject*    PyEyeTrialEnd   = NULL;
+static PyObject*    PyEyeLGAZE      = NULL;
+static PyObject*    PyEyeRGAZE      = NULL;
+static PyObject*    PyEyeLFIX       = NULL;
+static PyObject*    PyEyeRFIX       = NULL;
+static PyObject*    PyEyeSTIM       = NULL;
+static PyObject*    PyEyeMESSAGE    = NULL;
+static PyObject*    PyEyeLSAC       = NULL;
+static PyObject*    PyEyeRSAC       = NULL;
+static PyObject*    PyEyeAVGGAZE    = NULL;
+static PyObject*    PyEyeAVGFIX     = NULL;
+static PyObject*    PyEyeAVGSAC     = NULL;
+static PyObject*    PyEyeTRIAL      = NULL;
+static PyObject*    PyEyeTRIALSTART = NULL;
+static PyObject*    PyEyeTRIALEND   = NULL;
 
 //formats for logging
-static PyObject*    PyEyeFormatBinary   = NULL;
-static PyObject*    PyEyeFormatCsv      = NULL;
+static PyObject*    PyEyeFORMATBINARY   = NULL;
+static PyObject*    PyEyeFORMATCSV      = NULL;
 
 /**
  * adds the constants to the module
@@ -43,41 +47,48 @@ void pyeye_module_add_constants(PyObject* module) {
 
     assert(module);
 
-    PyEyeLGaze      = PyInt_FromLong(LGAZE);
-    PyEyeRGaze      = PyInt_FromLong(RGAZE);
-    PyEyeLFix       = PyInt_FromLong(LFIX);
-    PyEyeRFix       = PyInt_FromLong(RFIX);
-    PyEyeStim       = PyInt_FromLong(STIMULUS);
-    PyEyeMessage    = PyInt_FromLong(MESSAGE);
-    PyEyeLSac       = PyInt_FromLong(LSAC);
-    PyEyeRSac       = PyInt_FromLong(RSAC);
-    PyEyeAvgGaze    = PyInt_FromLong(AVGGAZE);
-    PyEyeAvgFix     = PyInt_FromLong(AVGFIX);
-    PyEyeAvgSac     = PyInt_FromLong(AVGSAC);
-    PyEyeTrial      = PyInt_FromLong(TRIAL);
-    PyEyeTrialStart = PyInt_FromLong(TRIALSTART);
-    PyEyeTrialEnd   = PyInt_FromLong(TRIALEND);
+    PyEyeLGAZE      = PyInt_FromLong(LGAZE);
+    PyEyeRGAZE      = PyInt_FromLong(RGAZE);
+    PyEyeLFIX       = PyInt_FromLong(LFIX);
+    PyEyeRFIX       = PyInt_FromLong(RFIX);
+    PyEyeSTIM       = PyInt_FromLong(STIMULUS);
+    PyEyeMESSAGE    = PyInt_FromLong(MESSAGE);
+    PyEyeLSAC       = PyInt_FromLong(LSAC);
+    PyEyeRSAC       = PyInt_FromLong(RSAC);
+    PyEyeAVGGAZE    = PyInt_FromLong(AVGGAZE);
+    PyEyeAVGFIX     = PyInt_FromLong(AVGFIX);
+    PyEyeAVGSAC     = PyInt_FromLong(AVGSAC);
+    PyEyeTRIAL      = PyInt_FromLong(TRIAL);
+    PyEyeTRIALSTART = PyInt_FromLong(TRIALSTART);
+    PyEyeTRIALEND   = PyInt_FromLong(TRIALEND);
 
-    PyEyeFormatBinary = PyInt_FromLong(FORMAT_BINARY);
-    PyEyeFormatCsv    = PyInt_FromLong(FORMAT_CSV);
+    PyEyeFORMATBINARY = PyInt_FromLong(FORMAT_BINARY);
+    PyEyeFORMATCSV    = PyInt_FromLong(FORMAT_CSV);
     
-    PyModule_AddObject(module, "LGAZE"      , PyEyeLGaze);
-    PyModule_AddObject(module, "RGAZE"      , PyEyeRGaze);
-    PyModule_AddObject(module, "LFIX"       , PyEyeLFix);
-    PyModule_AddObject(module, "RFIX"       , PyEyeRFix);
-    PyModule_AddObject(module, "STIMULUS"   , PyEyeStim);
-    PyModule_AddObject(module, "MESSAGE"    , PyEyeMessage);
-    PyModule_AddObject(module, "LSAC"       , PyEyeLSac);
-    PyModule_AddObject(module, "RSAC"       , PyEyeRSac);
-    PyModule_AddObject(module, "AVGGAZE"    , PyEyeAvgGaze);
-    PyModule_AddObject(module, "AVGFIX"     , PyEyeAvgFix);
-    PyModule_AddObject(module, "AVGSAC"     , PyEyeAvgSac);
-    PyModule_AddObject(module, "TRIAL"      , PyEyeTrial);
-    PyModule_AddObject(module, "TRIALSTART" , PyEyeTrialStart);
-    PyModule_AddObject(module, "TRIALEND"   , PyEyeTrialEnd);
+    PyModule_AddObject(module, "LGAZE"      , PyEyeLGAZE);
+    PyModule_AddObject(module, "RGAZE"      , PyEyeRGAZE);
+    PyModule_AddObject(module, "LFIX"       , PyEyeLFIX);
+    PyModule_AddObject(module, "RFIX"       , PyEyeRFIX);
+    PyModule_AddObject(module, "STIMULUS"   , PyEyeSTIM);
+    PyModule_AddObject(module, "MESSAGE"    , PyEyeMESSAGE);
+    PyModule_AddObject(module, "LSAC"       , PyEyeLSAC);
+    PyModule_AddObject(module, "RSAC"       , PyEyeRSAC);
+    PyModule_AddObject(module, "AVGGAZE"    , PyEyeAVGGAZE);
+    PyModule_AddObject(module, "AVGFIX"     , PyEyeAVGFIX);
+    PyModule_AddObject(module, "AVGSAC"     , PyEyeAVGSAC);
+    PyModule_AddObject(module, "TRIAL"      , PyEyeTRIAL);
+    PyModule_AddObject(module, "TRIALSTART" , PyEyeTRIALSTART);
+    PyModule_AddObject(module, "TRIALEND"   , PyEyeTRIALEND);
 
-    PyModule_AddObject(module, "FORMAT_BINARY"  , PyEyeFormatBinary);
-    PyModule_AddObject(module, "FORMAT_CSV"     , PyEyeFormatCsv);
+    PyModule_AddObject(module, "FORMAT_BINARY"  , PyEyeFORMATBINARY);
+    PyModule_AddObject(module, "FORMAT_CSV"     , PyEyeFORMATCSV);
+}
+
+/***** utilities *****/
+
+static bool is_simple_numeric(PyObject* obj)
+{
+    return PyInt_Check(obj) || PyFloat_Check(obj);
 }
 
 /***** EyeLogEntry *****/
@@ -542,14 +553,14 @@ FixationEntry_init(FixationEntry* self, PyObject* args, PyObject* kwds)
 
 static PyObject*
 FixationEntry_getX(FixationEntry* self) {
-    PFixationEntry* g = static_cast<PFixationEntry*>(self->m_parent.m_private);
-    return PyFloat_FromDouble(g->getX());
+    PFixationEntry* f = static_cast<PFixationEntry*>(self->m_parent.m_private);
+    return PyFloat_FromDouble(f->getX());
 }
 
 static PyObject*
 FixationEntry_getY(FixationEntry* self) {
-    PFixationEntry* g = static_cast<PFixationEntry*>(self->m_parent.m_private);
-    return PyFloat_FromDouble(g->getY());
+    PFixationEntry* f = static_cast<PFixationEntry*>(self->m_parent.m_private);
+    return PyFloat_FromDouble(f->getY());
 }
 
 static PyObject*
@@ -558,8 +569,8 @@ FixationEntry_setX(FixationEntry* self, PyObject* args) {
     if (!PyArg_ParseTuple(args, "f", &x))
         return NULL;
 
-    PFixationEntry* g = static_cast<PFixationEntry*>(self->m_parent.m_private);
-    g->setX(x);
+    PFixationEntry* f = static_cast<PFixationEntry*>(self->m_parent.m_private);
+    f->setX(x);
 
     Py_RETURN_NONE;
 }
@@ -570,28 +581,28 @@ FixationEntry_setY(FixationEntry* self, PyObject* args) {
     if (!PyArg_ParseTuple(args, "f", &y))
         return NULL;
 
-    PFixationEntry* g = static_cast<PFixationEntry*>(self->m_parent.m_private);
-    g->setY(y);
+    PFixationEntry* f = static_cast<PFixationEntry*>(self->m_parent.m_private);
+    f->setY(y);
 
     Py_RETURN_NONE;
 }
 
 static PyObject*
-FixationEntry_setPupil(FixationEntry* self, PyObject* args) {
-    float p;
-    if (!PyArg_ParseTuple(args, "f", &p))
+FixationEntry_setDuration(FixationEntry* self, PyObject* args) {
+    double dur;
+    if (!PyArg_ParseTuple(args, "d", &dur))
         return NULL;
 
-    PFixationEntry* g = static_cast<PFixationEntry*>(self->m_parent.m_private);
-    g->setPupil(p);
+    PFixationEntry* f = static_cast<PFixationEntry*>(self->m_parent.m_private);
+    f->setDuration(dur);
 
     Py_RETURN_NONE;
 }
 
 static PyObject*
-FixationEntry_getPupil(FixationEntry* self) {
-    PFixationEntry* g = static_cast<PFixationEntry*>(self->m_parent.m_private);
-    return PyFloat_FromDouble(g->getPupil());
+FixationEntry_getDuration(FixationEntry* self) {
+    PFixationEntry* f = static_cast<PFixationEntry*>(self->m_parent.m_private);
+    return PyFloat_FromDouble(f->getDuration());
 }
 
 static PyObject*
@@ -628,6 +639,110 @@ static PyMethodDef FixationEntry_methods[] = {
     {NULL}
 };
 
+static PyObject*
+FixationEntry_XGetter(FixationEntry* self, void*)
+{
+    return FixationEntry_getX(self);
+}
+
+static int
+FixationEntry_XSetter(FixationEntry* self, PyObject* value,  void*)
+{
+    float x;
+
+    if (!PyFloat_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "x must be float");
+        return -1;
+    }
+    x = PyFloat_AsDouble(value);
+
+    static_cast<PFixationEntry*>(self->m_parent.m_private)->setX(x);
+    
+    return 0;
+}
+
+static PyObject*
+FixationEntry_YGetter(FixationEntry* self, void*)
+{
+    return FixationEntry_getY(self);
+}
+
+static int
+FixationEntry_YSetter(FixationEntry* self, PyObject* value,  void*)
+{
+    float y;
+
+    if (!PyFloat_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "y must be float");
+        return -1;
+    }
+    y = PyFloat_AsDouble(value);
+
+
+    static_cast<PFixationEntry*>(self->m_parent.m_private)->setY(y);
+    return 0;
+}
+
+static PyObject*
+FixationEntry_DurationGetter(FixationEntry* self, void*)
+{
+    return FixationEntry_getDuration(self);
+}
+
+static int
+FixationEntry_DurationSetter(FixationEntry* self, PyObject* value,  void*)
+{
+    double dur;
+
+    if (!PyFloat_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "Duration must be float");
+        return -1;
+    }
+    
+    dur = PyFloat_AsDouble(value);
+
+    static_cast<PFixationEntry*>(self->m_parent.m_private)->setDuration(dur);
+    return 0;
+}
+
+static PyObject*
+FixationEntry_CoorGetter(FixationEntry* self, void*) 
+{
+    PFixationEntry* fix = static_cast<PFixationEntry*>(
+            self->m_parent.m_private
+            );
+    float x = fix->getX();
+    float y = fix->getY();
+    PyObject* result = Py_BuildValue("(ff)", x, y);
+    return result;
+}
+
+static int
+FixationEntry_CoorSetter(FixationEntry* self, PyObject* coor, void*)
+{
+    float x,y;
+    if (!PyArg_ParseTuple(coor, "(ff)", &x, &y)) {
+        return -1;
+    }
+    PCoordinate c(x,y);
+    static_cast<PFixationEntry*>(self->m_parent.m_private)->setCoordinate(c);
+    return 0;
+}
+
+static PyGetSetDef FixationEntry_getset[] {
+    {"x", (getter)FixationEntry_XGetter, (setter)FixationEntry_XSetter,
+        "The x coordinate.", NULL},
+    {"y", (getter)FixationEntry_YGetter, (setter)FixationEntry_YSetter,
+        "The y coordinate.", NULL},
+    {"duration", (getter) FixationEntry_DurationGetter,
+        (setter)FixationEntry_DurationSetter,
+        "Duration of the fixation.", NULL},
+    {"coordinate", (getter)FixationEntry_CoorGetter,
+        (setter)FixationEntry_CoorSetter,
+        "The x,y coordinate.", NULL},
+    { NULL }
+};
+
 static PyTypeObject FixationEntryType = {
     PyObject_HEAD_INIT(NULL)
     0,                          /*ob_size*/   // for binary compatibility
@@ -658,9 +773,9 @@ static PyTypeObject FixationEntryType = {
     0,		                    /*tp_weaklistoffset */
     0,		                    /*tp_iter */
     0,		                    /*tp_iternext */
-    FixationEntry_methods,          /*tp_methods */
+    FixationEntry_methods,      /*tp_methods */
     0,                          /*tp_members */
-    0,                          /*tp_getset */
+    FixationEntry_getset,       /*tp_getset */
     0,                          /*tp_base */
     0,                          /*tp_dict */
     0,                          /*tp_descr_get */
@@ -695,6 +810,10 @@ initpyeye(void)
     if (PyType_Ready(&GazeEntryType) < 0)
         return;
 
+    FixationEntryType.tp_base = &EyeLogEntryType;
+    if (PyType_Ready(&FixationEntryType) < 0)
+        return;
+
     m = Py_InitModule3(module_name, PyEyeMethods, module_doc);
     if(m == NULL)
         return;
@@ -704,6 +823,9 @@ initpyeye(void)
     
     Py_INCREF(&GazeEntryType);
     PyModule_AddObject(m, "GazeEntry", (PyObject*) &GazeEntryType);
+    
+    Py_INCREF(&GazeEntryType);
+    PyModule_AddObject(m, "FixationEntry", (PyObject*) &FixationEntryType);
 
     pyeye_module_add_constants(m);
 
