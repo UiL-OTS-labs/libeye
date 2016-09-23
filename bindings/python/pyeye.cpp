@@ -91,6 +91,8 @@ static bool is_simple_numeric(PyObject* obj)
     return PyInt_Check(obj) || PyFloat_Check(obj);
 }
 
+#define PRIV_POINTER self->m_parent.m_private
+
 /***** EyeLogEntry *****/
 
 typedef struct {
@@ -786,7 +788,144 @@ static PyTypeObject FixationEntryType = {
     0,
 };
 
+/***** MessageEntry *****/
 
+typedef struct {
+    EyeLogEntry m_parent;
+} MessageEntry;
+
+static int
+MessageEntry_init(MessageEntry* self, PyObject* args, PyObject* kwds)
+{
+    PMessageEntry* message = NULL;
+    double time;
+    const char* msg;
+
+    static const char* kwlist[] = {
+        "time",
+        "message",
+        NULL
+    };
+
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, "ds",
+                const_cast<char**>(kwlist),
+                &time,
+                &msg
+                )
+      )
+        return -1;
+    
+    try {
+        message = new PMessageEntry(time, msg);
+    } catch(std::bad_alloc& e) {
+        PyErr_NoMemory();
+        return -1;
+    } catch(...) {
+        PyErr_SetString(PyExc_RuntimeError, "FixationEntry_init: unknown error");
+        return -1;
+    }
+
+    self->m_parent.m_private  = static_cast<PEntryPtr>(message);
+    return 0;
+}
+
+static PyObject*
+MessageEntry_getMessage(MessageEntry* self)
+{
+    const char* msg;
+    msg = static_cast<PMessageEntry*>(PRIV_POINTER)->getMessage().c_str();
+    return PyString_FromString(msg);
+}
+
+static PyObject*
+MessageEntry_setMessage(MessageEntry* self, PyObject* args) {
+    const char* msg;
+    if (!PyArg_ParseTuple(args, "s", &msg))
+        return NULL;
+
+    static_cast<PMessageEntry*>(PRIV_POINTER)->setMessage(msg);
+    Py_RETURN_NONE;
+}
+
+static PyMethodDef MessageEntry_methods[] = {
+    {"getMessage", (PyCFunction) MessageEntry_getMessage, METH_NOARGS,
+        "Returns the x coordinate of the gaze."},
+    {"setMessage", (PyCFunction) MessageEntry_setMessage, METH_VARARGS,
+        "Returns the y coordinate of the gaze."},
+    {NULL}
+};
+
+static PyObject*
+MessageEntry_MessageGetter(MessageEntry* self, void*) 
+{
+    PMessageEntry* msg = static_cast<PMessageEntry*>(
+            self->m_parent.m_private
+            );
+    return PyString_FromString(msg->toString().c_str());
+}
+
+static int
+MessageEntry_MessageSetter(MessageEntry* self, PyObject* message, void*)
+{
+    const char* msg;
+    if(!PyString_Check(message))
+        return -1;
+
+    msg = PyString_AsString(message);
+      
+    static_cast<PMessageEntry*>(self->m_parent.m_private)->setMessage(msg);
+    return 0;
+}
+
+static PyGetSetDef MessageEntry_getset[] {
+    {"message", (getter)MessageEntry_MessageGetter,
+        (setter)MessageEntry_MessageSetter,
+        "The contained message.", NULL},
+    { NULL }
+};
+
+static PyTypeObject MessageEntryType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                          /*ob_size*/   // for binary compatibility
+    "pyeye.MessageEntry",          /*tp_name*/
+    sizeof(MessageEntry),          /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    0,                          /*tp_dealloc*/
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_compare*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash */
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,         /*tp_flags*/
+    "A FixationEntry represents the gaze in an EyeLog.",
+                                /*tp_doc*/
+    0,		                    /*tp_traverse */
+    0,		                    /*tp_clear */
+    0,		                    /*tp_richcompare */
+    0,		                    /*tp_weaklistoffset */
+    0,		                    /*tp_iter */
+    0,		                    /*tp_iternext */
+    MessageEntry_methods,       /*tp_methods */
+    0,                          /*tp_members */
+    MessageEntry_getset,        /*tp_getset */
+    0,                          /*tp_base */
+    0,                          /*tp_dict */
+    0,                          /*tp_descr_get */
+    0,                          /*tp_descr_set */
+    0,                          /*tp_dictoffset */
+    (initproc)MessageEntry_init,   /*tp_init */
+    0,
+    0,
+};
 
 /***** Module functions *****/
 
@@ -813,6 +952,10 @@ initpyeye(void)
     FixationEntryType.tp_base = &EyeLogEntryType;
     if (PyType_Ready(&FixationEntryType) < 0)
         return;
+    
+    MessageEntryType.tp_base = &EyeLogEntryType;
+    if (PyType_Ready(&MessageEntryType) < 0)
+        return;
 
     m = Py_InitModule3(module_name, PyEyeMethods, module_doc);
     if(m == NULL)
@@ -824,8 +967,11 @@ initpyeye(void)
     Py_INCREF(&GazeEntryType);
     PyModule_AddObject(m, "GazeEntry", (PyObject*) &GazeEntryType);
     
-    Py_INCREF(&GazeEntryType);
+    Py_INCREF(&FixationEntryType);
     PyModule_AddObject(m, "FixationEntry", (PyObject*) &FixationEntryType);
+    
+    Py_INCREF(&MessageEntryType);
+    PyModule_AddObject(m, "MessageEntry", (PyObject*) &MessageEntryType);
 
     pyeye_module_add_constants(m);
 
