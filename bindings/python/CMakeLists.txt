@@ -1,26 +1,19 @@
 
-FIND_PACKAGE(SWIG REQUIRED)
-INCLUDE(${SWIG_USE_FILE})
 
-find_package(PythonLibs REQUIRED)
-include_directories(${PYTHON_INCLUDE_DIRS})
+find_program(PYTHON "python")
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+set (SETUP_PY_IN    "${CMAKE_CURRENT_SOURCE_DIR}/setup.py.in")
+set (SETUP_PY       "${CMAKE_CURRENT_BINARY_DIR}/setup.py")
+set (PYEYE_DEPS     "${EYELOG_SHARED_LIB}")
+set (OUTPUT         "${CMAKE_CURRENT_BINARY_DIR}/build/timestamp")
 
-SET(CMAKE_SWIG_FLAGS "")
+configure_file(${SETUP_PY_IN} ${SETUP_PY})
 
-# Set file properties to C++ and dependencies
-# this ensures rebuilding of binding when
-# one of those headers changes.
-SET_SOURCE_FILES_PROPERTIES(pyeye.i PROPERTIES
-        CPLUSPLUS ON
-        OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/log/EyeLog.h 
-        OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/log/Shapes.h 
-        )
+add_custom_command( OUTPUT ${OUTPUT}
+                    COMMAND ${PYTHON} ${SETUP_PY} build
+                    COMMAND ${CMAKE_COMMAND} -E touch ${OUTPUT}
+                    DEPENDS ${DEPS}
+                    )
 
-# this rule is commented out, because otherwise system headers
-# included in our headers get included aswell.
-#SET_SOURCE_FILES_PROPERTIES(pyeye.i PROPERTIES SWIG_FLAGS "-includeall")
+add_custom_target(pyeye ALL DEPENDS ${OUTPUT})
 
-SWIG_ADD_MODULE(pyeye python pyeye.i) 
-SWIG_LINK_LIBRARIES(pyeye ${PYTHON_LIBRARIES} ${EYELOG_SHARED_LIB})
