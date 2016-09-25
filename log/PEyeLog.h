@@ -80,7 +80,11 @@ public :
     void reserve(unsigned size);
 
     /**
-     * Adds an entry to this log
+     * Adds an entry to this log.
+     *
+     * Add an entry to the log. Note the log takes ownership of the
+     * log entry, there for you might want to call PEyeLogEntry::clone()
+     * to pass this entry.
      */
     void addEntry(PEyeLogEntry* entry);
 

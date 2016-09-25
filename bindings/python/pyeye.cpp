@@ -3,6 +3,7 @@
 #include <Python.h>
 
 #include <log/EyeLog.h>
+//#include "pyshapes.h"
 
 // python takes many strings as char* therefore we turn -Wwrite-strings off.
 #pragma GCC diagnostic ignored "-Wwrite-strings"
@@ -15,20 +16,30 @@ extern "C" {
 const char* module_name = "pyeye";
 const char* module_doc  = "The pyeye module is a pythonic wrapper around libeye";
 
+/***** Forward declarations *****/
+
+struct _EyeLogEntry;
+
+static PyObject* EyeLogEntry_compare(struct _EyeLogEntry* self, PyObject* args);
+static int EyeLogEntry_Compare(struct _EyeLogEntry* self, PyObject* rhs);
 
 /***** utilities *****/
 
-static bool is_simple_numeric(PyObject* obj)
-{
-    return PyInt_Check(obj) || PyFloat_Check(obj);
-}
 
+/**
+ * pretty much all eye log entries use self->m_parent.m_private to store the
+ * C++ PEyeLogEntry this makes it a bit more conveniant to obtain it.
+ */
 #define PRIV_POINTER self->m_parent.m_private
+
+const PyTypeObject* getEyeLogEntryClass();
 
 
 /***** Module objects *****/
 
 static PyObject*    PyEyeError = NULL;
+
+static _EyeLogEntry* TheEyeLogEntry  = NULL;
 
 /* constants */
 //GazeEntries
@@ -97,7 +108,7 @@ void pyeye_module_add_constants(PyObject* module) {
 
 /***** EyeLogEntry *****/
 
-typedef struct {
+typedef struct _EyeLogEntry{
     PyObject_HEAD
     PEntryPtr m_private;
 } EyeLogEntry;
@@ -161,24 +172,6 @@ static PyObject* EyeLogEntry_writeBinary(PyObject* self, PyObject* args)
     return NULL;
 }
 
-static PyObject* EyeLogEntry_compare(EyeLogEntry* self, PyObject* args)
-{
-    PyObject* other = NULL;
-    EyeLogEntry* o =NULL; 
-
-    if(!PyArg_ParseTuple(args, "O", &other))
-        return NULL;
-    o = (EyeLogEntry*) other;
-
-    if(!PyObject_IsInstance(other, (PyObject*)&self->ob_type))
-        return NULL;
-
-    int comp = self->m_private->compare(*o->m_private);
-    if (comp) // python demands for -1, 0, or 1
-        comp = comp < 0 ? -1 : 1;
-
-    return PyInt_FromLong(comp);
-}
 
 static PyObject* EyeLogEntry_getSeparator(PyObject* self, PyObject* args)
 {
@@ -270,6 +263,13 @@ static PyMethodDef EyeLogEntry_methods[] = {
     {NULL} /*sentinal*/
 };
 
+
+static PyObject*
+EyeLogEntry_str(EyeLogEntry* self)
+{
+    return PyString_FromString(self->m_private->toString().c_str());
+}
+
 static PyTypeObject EyeLogEntryType = {
     PyObject_HEAD_INIT(NULL)
     0,                          /*ob_size*/   // for binary compatibility
@@ -280,14 +280,14 @@ static PyTypeObject EyeLogEntryType = {
     0,                          /*tp_print*/
     0,                          /*tp_getattr*/
     0,                          /*tp_setattr*/
-    0,                          /*tp_compare*/
+    (cmpfunc)EyeLogEntry_Compare,        /*tp_compare*/
     0,                          /*tp_repr*/
     0,                          /*tp_as_number*/
     0,                          /*tp_as_sequence*/
     0,                          /*tp_as_mapping*/
     0,                          /*tp_hash */
     0,                          /*tp_call*/
-    0,                          /*tp_str*/
+    EyeLogEntry_str,            /*tp_str*/
     0,                          /*tp_getattro*/
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
@@ -313,6 +313,63 @@ static PyTypeObject EyeLogEntryType = {
     0,                          /*tp_alloc */
     EyeLogEntry_new,            /*tp_new */
 };
+
+/*
+ * This compare is to implement the comparison operators, the other
+ * just compares like the C++ function does.
+ */
+static int
+EyeLogEntry_Compare(EyeLogEntry* lhs, PyObject* rhs)
+{
+    if(! PyObject_IsInstance(rhs, (PyObject*) &EyeLogEntryType)) {
+        PyErr_SetString(PyExc_TypeError,
+                "Comparing EyeLogEntry with another object type"
+                );
+        return -2;
+    }
+
+    EyeLogEntry* righths = (EyeLogEntry*) rhs;
+
+    int ret = static_cast<PEyeLogEntry*>(lhs->m_private)->compare(
+            *righths->m_private
+        );
+    
+    if (ret) ret = ret < 0 ? -1 : 1;
+
+    return ret;
+}
+
+static PyObject* EyeLogEntry_compare(EyeLogEntry* self, PyObject* args)
+{
+    PyObject* other = NULL;
+    EyeLogEntry* o  = NULL; 
+    PEyeLogEntry* lhs=NULL, *rhs = NULL;
+    int comp;
+
+    if(!PyArg_ParseTuple(args, "O!", &EyeLogEntryType, &other))//, &EyeLogEntryType))
+        return NULL;
+    
+//    if (!PyObject_IsInstance(other, (PyObject*)&EyeLogEntryType)) {
+//        PyErr_SetString(PyExc_TypeError,
+//                "Can only compare with another instance (derived) of EyeLogEntry.");
+//        return NULL;
+//    }
+
+    o = (EyeLogEntry*) other;
+
+    lhs = static_cast<PEyeLogEntry*>(self->m_private);
+    rhs = static_cast<PEyeLogEntry*>(o->m_private);
+
+    comp = lhs->compare(*rhs);
+
+    return PyInt_FromLong(comp);
+}
+
+//static const PyObject*
+//getEyeLogEntryClass()
+//{
+//    return &EyeLogEntryType;
+//}
 
 /***** GazeEntry *****/
 
@@ -347,6 +404,11 @@ GazeEntry_init(GazeEntry* self, PyObject* args, PyObject* kwds)
                 )
       )
         return -1;
+
+    if (entry != LGAZE && entry != RGAZE && entry != AVGGAZE) {
+        PyErr_SetString(PyExc_ValueError, "entry must be LGAZE, RGAZE or AVGGAZE");
+        return -1;
+    }
 
     try {
         gaze = new PGazeEntry(entry, time, x, y, pupil);
@@ -471,7 +533,7 @@ static PyTypeObject GazeEntryType = {
     0,                          /*tp_getattro*/
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT,         /*tp_flags*/
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
     "A GazeEntry represents the gaze in an EyeLog.",
                                 /*tp_doc*/
     0,		                    /*tp_traverse */
@@ -768,7 +830,7 @@ static PyTypeObject FixationEntryType = {
     0,                          /*tp_getattro*/
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT,         /*tp_flags*/
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
     "A FixationEntry represents the a fixation in an EyeLog.",
                                 /*tp_doc*/
     0,		                    /*tp_traverse */
@@ -907,7 +969,7 @@ static PyTypeObject MessageEntryType = {
     0,                          /*tp_getattro*/
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT,         /*tp_flags*/
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
     "A MessageEntry gives opportunities to present some "
         "metadata in an EyeLog.",
                                 /*tp_doc*/
@@ -1249,7 +1311,7 @@ static PyTypeObject SaccadeEntryType = {
     0,                          /*tp_getattro*/
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT,         /*tp_flags*/
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
     "A SaccadeEntry represents one saccade in an EyeLog.",
                                 /*tp_doc*/
     0,		                    /*tp_traverse */
@@ -1271,6 +1333,634 @@ static PyTypeObject SaccadeEntryType = {
     0,
 };
 
+/***** TrialEntry *****/
+
+typedef struct {
+    EyeLogEntry m_parent;
+} TrialEntry;
+
+static int
+TrialEntry_init(TrialEntry* self, PyObject* args, PyObject* kwds)
+{
+    PTrialEntry* trial = NULL;
+    double time;
+    const char* identifier, *group;
+
+    static const char* kwlist[] = {
+        "time",
+        "identifier",
+        "group",
+        NULL
+    };
+
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, "dss",
+                const_cast<char**>(kwlist),
+                &time,
+                &identifier,
+                &group
+                )
+      )
+        return -1;
+    
+    try {
+        trial = new PTrialEntry(time, identifier, group);
+    } catch(std::bad_alloc& e) {
+        PyErr_NoMemory();
+        return -1;
+    } catch(...) {
+        PyErr_SetString(PyExc_RuntimeError, "TrialEntry_init: unknown error");
+        return -1;
+    }
+
+    self->m_parent.m_private  = static_cast<PEntryPtr>(trial);
+    return 0;
+}
+
+static PyObject*
+TrialEntry_getIdentifier(TrialEntry* self)
+{
+    PTrialEntry* sac = static_cast<PTrialEntry*>(PRIV_POINTER);
+    return PyString_FromString(sac->getIdentifier().c_str());
+}
+
+static int
+TrialEntry_setIdentifier(TrialEntry* self, PyObject* args)
+{
+    const char* identifier;
+    if (!PyArg_ParseTuple(args, "s", &identifier))
+        return -1;
+    static_cast<PTrialEntry*>(PRIV_POINTER)->setIdentifier(identifier);
+    return 0;
+}
+
+static PyObject*
+TrialEntry_getGroup(TrialEntry* self)
+{
+    PTrialEntry* sac = static_cast<PTrialEntry*>(PRIV_POINTER);
+    return PyString_FromString(sac->getGroup().c_str());
+}
+
+static int
+TrialEntry_setGroup(TrialEntry* self, PyObject* args)
+{
+    const char* group;
+    if (!PyArg_ParseTuple(args, "s", &group))
+        return -1;
+    static_cast<PTrialEntry*>(PRIV_POINTER)->setGroup(group);
+    return 0;
+}
+
+static PyMethodDef TrialEntry_methods[] = {
+    {"getIdentifier", (PyCFunction) TrialEntry_getIdentifier, METH_NOARGS,
+        "Returns the identifier of the trial."},
+    {"setIdentifier", (PyCFunction) TrialEntry_setIdentifier, METH_VARARGS,
+        "Sets the identifier of the trial."},
+    {"getGroup", (PyCFunction) TrialEntry_getGroup, METH_NOARGS,
+        "Returns the group of the trial."},
+    {"setGroup", (PyCFunction) TrialEntry_setGroup, METH_VARARGS,
+        "Sets the group of the trial."},
+    {NULL}
+};
+
+static PyObject*
+TrialEntry_IdentifierGetter(TrialEntry* self, void*)
+{
+    return PyString_FromString(
+            static_cast<PTrialEntry*>(PRIV_POINTER)->getIdentifier().c_str()
+            );
+}
+
+static int
+TrialEntry_IdentifierSetter(TrialEntry* self, PyObject* value, void*)
+{
+    const char* identifier;
+    if (!PyString_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "Identifier must be a string.");
+        return -1;
+    }
+
+    identifier = PyString_AsString(value);
+
+    static_cast<PTrialEntry*>(PRIV_POINTER)->setIdentifier(identifier);
+    return 0;
+}
+
+static PyObject*
+TrialEntry_GroupGetter(TrialEntry* self, void*)
+{
+    return PyString_FromString(
+            static_cast<PTrialEntry*>(PRIV_POINTER)->getGroup().c_str()
+            );
+}
+
+static int
+TrialEntry_GroupSetter(TrialEntry* self, PyObject* value, void*)
+{
+    const char* group;
+    if (!PyString_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "Identifier must be a string.");
+        return -1;
+    }
+
+    group = PyString_AsString(value);
+
+    static_cast<PTrialEntry*>(PRIV_POINTER)->setGroup(group);
+    return 0;
+}
+
+static PyGetSetDef TrialEntry_getset[] {
+    {"identifier", (getter)TrialEntry_IdentifierGetter,
+        (setter)TrialEntry_IdentifierSetter,
+        "This identifies a trial", NULL},
+    {"group", (getter)TrialEntry_GroupGetter,
+        (setter)TrialEntry_GroupSetter,
+        "This tell the group to which the trial belongs.", NULL},
+    { NULL }
+};
+
+static PyTypeObject TrialEntryType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                          /*ob_size*/   // for binary compatibility
+    "pyeye.TrialEntry",         /*tp_name*/
+    sizeof(TrialEntry),         /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    0,                          /*tp_dealloc*/
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_compare*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash */
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
+    "A TrialEntry represents one trial this \"groups\" trials in a experiment.",
+                                /*tp_doc*/
+    0,		                    /*tp_traverse */
+    0,		                    /*tp_clear */
+    0,		                    /*tp_richcompare */
+    0,		                    /*tp_weaklistoffset */
+    0,		                    /*tp_iter */
+    0,		                    /*tp_iternext */
+    TrialEntry_methods,         /*tp_methods */
+    0,                          /*tp_members */
+    TrialEntry_getset,          /*tp_getset */
+    0,                          /*tp_base */
+    0,                          /*tp_dict */
+    0,                          /*tp_descr_get */
+    0,                          /*tp_descr_set */
+    0,                          /*tp_dictoffset */
+    (initproc)TrialEntry_init,  /*tp_init */
+    0,
+    0,
+};
+
+/***** TrialStartEntry *****/
+
+typedef struct {
+    EyeLogEntry m_parent;
+} TrialStartEntry;
+
+static int
+TrialStartEntry_init(TrialStartEntry* self, PyObject* args, PyObject* kwds)
+{
+    PTrialStartEntry* trialstart = NULL;
+    double time;
+
+    static const char* kwlist[] = {
+        "time",
+        NULL
+    };
+
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, "d",
+                const_cast<char**>(kwlist),
+                &time
+                )
+      )
+        return -1;
+    
+    try {
+        trialstart = new PTrialStartEntry(time);
+    } catch(std::bad_alloc& e) {
+        PyErr_NoMemory();
+        return -1;
+    } catch(...) {
+        PyErr_SetString(PyExc_RuntimeError, "TrialStartEntry_init: unknown error");
+        return -1;
+    }
+
+    self->m_parent.m_private  = static_cast<PEntryPtr>(trialstart);
+    return 0;
+}
+
+static PyMethodDef TrialStartEntry_methods[] = {
+    {NULL}
+};
+
+
+static PyGetSetDef TrialStartEntry_getset[] {
+    { NULL }
+};
+
+static PyTypeObject TrialStartEntryType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                          /*ob_size*/   // for binary compatibility
+    "pyeye.TrialStartEntry",         /*tp_name*/
+    sizeof(TrialStartEntry),         /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    0,                          /*tp_dealloc*/
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_compare*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash */
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
+    "A TrialStartEntry redefines the trial start point many event are ignored "
+    "when they occur before a TrialStartEntry.",
+                                /*tp_doc*/
+    0,		                    /*tp_traverse */
+    0,		                    /*tp_clear */
+    0,		                    /*tp_richcompare */
+    0,		                    /*tp_weaklistoffset */
+    0,		                    /*tp_iter */
+    0,		                    /*tp_iternext */
+    TrialStartEntry_methods,         /*tp_methods */
+    0,                          /*tp_members */
+    TrialStartEntry_getset,          /*tp_getset */
+    0,                          /*tp_base */
+    0,                          /*tp_dict */
+    0,                          /*tp_descr_get */
+    0,                          /*tp_descr_set */
+    0,                          /*tp_dictoffset */
+    (initproc)TrialStartEntry_init,  /*tp_init */
+    0,
+    0,
+};
+
+/***** TrialEndEntry *****/
+
+typedef struct {
+    EyeLogEntry m_parent;
+} TrialEndEntry;
+
+static int
+TrialEndEntry_init(TrialEndEntry* self, PyObject* args, PyObject* kwds)
+{
+    PTrialEndEntry* trialstart = NULL;
+    double time;
+
+    static const char* kwlist[] = {
+        "time",
+        NULL
+    };
+
+    if(!PyArg_ParseTupleAndKeywords(args, kwds, "d",
+                const_cast<char**>(kwlist),
+                &time
+                )
+      )
+        return -1;
+    
+    try {
+        trialstart = new PTrialEndEntry(time);
+    } catch(std::bad_alloc& e) {
+        PyErr_NoMemory();
+        return -1;
+    } catch(...) {
+        PyErr_SetString(PyExc_RuntimeError, "TrialEndEntry_init: unknown error");
+        return -1;
+    }
+
+    self->m_parent.m_private  = static_cast<PEntryPtr>(trialstart);
+    return 0;
+}
+
+static PyMethodDef TrialEndEntry_methods[] = {
+    {NULL}
+};
+
+
+static PyGetSetDef TrialEndEntry_getset[] {
+    { NULL }
+};
+
+static PyTypeObject TrialEndEntryType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                          /*ob_size*/   // for binary compatibility
+    "pyeye.TrialEndEntry",         /*tp_name*/
+    sizeof(TrialEndEntry),         /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    0,                          /*tp_dealloc*/
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_compare*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash */
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
+    "A TrialEndEntry redefines the trial end point many event are ignored "
+    "when they occur after a TrialEndEntry.",
+                                /*tp_doc*/
+    0,		                    /*tp_traverse */
+    0,		                    /*tp_clear */
+    0,		                    /*tp_richcompare */
+    0,		                    /*tp_weaklistoffset */
+    0,		                    /*tp_iter */
+    0,		                    /*tp_iternext */
+    TrialEndEntry_methods,         /*tp_methods */
+    0,                          /*tp_members */
+    TrialEndEntry_getset,          /*tp_getset */
+    0,                          /*tp_base */
+    0,                          /*tp_dict */
+    0,                          /*tp_descr_get */
+    0,                          /*tp_descr_set */
+    0,                          /*tp_dictoffset */
+    (initproc)TrialEndEntry_init,  /*tp_init */
+    0,
+    0,
+};
+
+
+/***** end of eyelog entries *****/
+
+// We only use this for the Wrappers arround EyeLogEntry.
+#undef PRIV_POINTER
+
+/***** EyeLog *****/
+
+typedef struct {
+    PyObject_HEAD
+    PEyeLog* m_log;
+} EyeLog;
+
+void
+EyeLog_dealloc(EyeLog* self)
+{
+    delete self->m_log;
+    Py_TYPE(self)->tp_free((PyObject*) self);
+}
+
+static PyObject*
+EyeLog_new(PyTypeObject *type, PyObject* args, PyObject* kwds)
+{
+    EyeLog* ret = NULL;
+    ret = (EyeLog*) type->tp_alloc(type, 0);
+
+    if (ret)
+        ret->m_log = NULL;
+    else
+        PyErr_NoMemory();
+
+    return (PyObject*)ret;
+}
+
+static int
+EyeLog_init(EyeLog* self, PyObject* args)
+{
+    if (!PyArg_ParseTuple(args, ""))
+        return -1;
+
+    try {
+        self->m_log = new PEyeLog;
+    }
+    catch (std::bad_alloc& e) {
+        PyErr_NoMemory();
+        return -1;
+    }
+    catch (...) {
+        PyErr_SetString(PyExc_RuntimeError, "EyeLog_init: unknown exception.");
+        return -1;
+    }
+    return 0;
+}
+
+static PyObject*
+EyeLog_open(EyeLog* self, PyObject* args)
+{
+    const char* filename = NULL;
+    int ret;
+
+    if(!PyArg_ParseTuple(args, "s", &filename))
+        return NULL;
+
+    ret = self->m_log->open(filename);
+    if (ret != 0) {
+        return PyErr_SetFromErrno((PyObject*)Py_TYPE(self));
+    }
+
+    Py_RETURN_NONE;
+}
+
+static PyObject*
+EyeLog_close(EyeLog* self, PyObject* args)
+{
+    if (! PyArg_ParseTuple(args, ""))
+        return NULL;
+
+    self->m_log->close();
+    Py_RETURN_NONE;
+}
+
+static PyObject*
+EyeLog_clear(EyeLog* self, PyObject* args)
+{
+    if (! PyArg_ParseTuple(args, ""))
+        return NULL;
+
+    self->m_log->clear();
+    Py_RETURN_NONE;
+}
+
+static PyObject*
+EyeLog_reserve(EyeLog* self, PyObject* args)
+{
+    int n;
+    if (!PyArg_ParseTuple(args, "i", &n))
+        return NULL;
+
+    try {
+        self->m_log->reserve(n);
+    }
+    catch (std::bad_alloc& e) {
+        return PyErr_NoMemory();
+    }
+    Py_RETURN_NONE;
+}
+
+static PyObject*
+EyeLog_addEntry(EyeLog* self, PyObject* args)
+{
+    EyeLogEntry* entry = NULL;
+    if (!PyArg_ParseTuple(args, "O!", &EyeLogEntryType, entry))
+        return NULL;
+
+    try {
+        self->m_log->addEntry(entry->m_private->clone());
+    } catch (std::bad_alloc& e) {
+        return PyErr_NoMemory();
+    }
+    
+    Py_RETURN_NONE;
+}
+
+static PyObject*
+EyeLog_write(EyeLog* self, PyObject*args)
+{
+    int ret;
+    eyelog_format format;
+    if (!PyArg_ParseTuple(args, "i", &format))
+        return NULL;
+
+    if (format != FORMAT_CSV && format != FORMAT_BINARY) {
+        PyErr_SetString(PyExc_ValueError,
+                "write expects pyeye.BINARY or pyeye.CSV");
+        return 0;
+    }
+
+    ret = self->m_log->write(format);
+    if (ret)
+        return PyErr_SetFromErrno((PyObject*)Py_TYPE(self));
+
+    return PyInt_FromLong(ret);
+}
+
+static PyObject*
+EyeLog_read(EyeLog* self, PyObject* args)
+{
+    const char* filename = NULL;
+    int clear = 1;
+    if(!PyArg_ParseTuple(args, "s|i", &filename, &clear))
+        return NULL;
+
+    int ret = self->m_log->read(filename, clear);
+    if (ret)
+        return PyErr_SetFromErrno((PyObject*)Py_TYPE(self));
+    
+    return PyInt_FromLong(ret);
+}
+
+static PyObject*
+EyeLog_isOpen(EyeLog* self)
+{
+    return PyBool_FromLong(self->m_log->isOpen());
+}
+
+static PyObject*
+EyeLog_getFilename(EyeLog* self)
+{
+    const char* filename;
+    filename = self->m_log->getFilename();
+    return PyString_FromString(filename);
+}
+
+static PyObject*
+EyeLog_getEntries(EyeLog* self)
+{
+    PyErr_SetString(PyExc_NotImplementedError, "Implement ");
+    return NULL;
+}
+
+static PyObject*
+EyeLog_setEntries(EyeLog* self, PyObject* args)
+{
+    PyErr_SetString(PyExc_NotImplementedError, "Implement ");
+    return NULL;
+}
+
+static PyMethodDef EyeLog_methods[] = {
+    {"open", (PyCFunction) EyeLog_open, METH_VARARGS,
+        "Open the logfile."},
+    {"close", (PyCFunction) EyeLog_close, METH_NOARGS,
+        "Close the logfile."},
+    {"clear", (PyCFunction) EyeLog_clear, METH_NOARGS,
+        "Clear all logentries from the log."},
+    {"reserve", (PyCFunction) EyeLog_reserve, METH_VARARGS,
+        "Reserve a number of places inside the log, this is probably a small optimalisation in python."},
+    {"addEntry",(PyCFunction) EyeLog_addEntry,METH_VARARGS,
+        "Add a log entry to the log."},
+    {"write",(PyCFunction) EyeLog_write,METH_VARARGS,
+        "Write the format to the specified location with a given format."},
+    {"read",(PyCFunction) EyeLog_read,METH_VARARGS,
+        "Read a file from a specified location."},
+    {"isOpen",(PyCFunction) EyeLog_isOpen, METH_NOARGS,
+        "Returns whether the file is opened."},
+    {"getFilename",(PyCFunction) EyeLog_getFilename, METH_NOARGS,
+        "Get the filename."},
+    {"getEntries",(PyCFunction) EyeLog_getEntries, METH_NOARGS,
+        "Get the entries in the log."},
+    {"setEntries",(PyCFunction) EyeLog_setEntries, METH_VARARGS,
+        "Get the entries in the log."},
+    {NULL}
+};
+
+
+static PyTypeObject EyeLogType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                          /*ob_size*/   // for binary compatibility
+    "pyeye.EyeLog",             /*tp_name*/
+    sizeof(EyeLog),             /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    (destructor)EyeLog_dealloc, /*tp_dealloc*/
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_compare*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash */
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
+    "A EyeLog redefines the trial end point many event are ignored "
+    "when they occur after a EyeLog.",
+                                /*tp_doc*/
+    0,		                    /*tp_traverse */
+    0,		                    /*tp_clear */
+    0,		                    /*tp_richcompare */
+    0,		                    /*tp_weaklistoffset */
+    0,		                    /*tp_iter */
+    0,		                    /*tp_iternext */
+    EyeLog_methods,             /*tp_methods */
+    0,                          /*tp_members */
+    0,                          /*tp_getset */
+    0,                          /*tp_base */
+    0,                          /*tp_dict */
+    0,                          /*tp_descr_get */
+    0,                          /*tp_descr_set */
+    0,                          /*tp_dictoffset */
+    (initproc)EyeLog_init,  /*tp_init */
+    0,
+    EyeLog_new,
+};
+
 /***** Module functions *****/
 
 static PyMethodDef PyEyeMethods[] = {
@@ -1286,6 +1976,9 @@ initpyeye(void)
 {
     PyObject *m;
 
+    /*
+     * Ready eyelogentries 
+     */
     if (PyType_Ready(&EyeLogEntryType) < 0)
         return;
     
@@ -1302,13 +1995,33 @@ initpyeye(void)
         return;
 
     SaccadeEntryType.tp_base = &EyeLogEntryType;
-    if (PyType_Ready(&MessageEntryType) < 0)
+    if (PyType_Ready(&SaccadeEntryType) < 0)
+        return;
+    
+    TrialEntryType.tp_base = &EyeLogEntryType;
+    if (PyType_Ready(&TrialEntryType) < 0)
+        return;
+
+    TrialStartEntryType.tp_base = &EyeLogEntryType;
+    if (PyType_Ready(&TrialStartEntryType) < 0)
+        return;
+
+    TrialEndEntryType.tp_base = &EyeLogEntryType;
+    if (PyType_Ready(&TrialEndEntryType) < 0)
+        return;
+
+    // Ready eyelog
+    if(PyType_Ready(&EyeLogType) < 0)
         return;
 
     m = Py_InitModule3(module_name, PyEyeMethods, module_doc);
     if(m == NULL)
         return;
 
+
+    /*
+     * add eyelog entries
+     */
     Py_INCREF(&EyeLogEntryType);
     PyModule_AddObject(m, "EyeLogEntry", (PyObject*) &EyeLogEntryType);
     
@@ -1324,7 +2037,30 @@ initpyeye(void)
     Py_INCREF(&SaccadeEntryType);
     PyModule_AddObject(m, "SaccadeEntry", (PyObject*) &SaccadeEntryType);
     
+    Py_INCREF(&TrialEntryType);
+    PyModule_AddObject(m, "TrialEntry", (PyObject*) &TrialEntryType);
+    
+    Py_INCREF(&TrialStartEntryType);
+    PyModule_AddObject(m, "TrialStartEntry", (PyObject*) &TrialStartEntryType);
+    
+    Py_INCREF(&TrialEndEntryType);
+    PyModule_AddObject(m, "TrialEndEntry", (PyObject*) &TrialEndEntryType);
+
+    // Add eyelog.
+    Py_INCREF(&EyeLogType);
+    PyModule_AddObject(m, "EyeLog", (PyObject*) &EyeLogType);
+
+    
     pyeye_module_add_constants(m);
+    
+    // for internal use only.
+    TheEyeLogEntry = (EyeLogEntry*) EyeLogEntry_new(&EyeLogEntryType, NULL, NULL);
+    if (!TheEyeLogEntry)
+        return;
+            
+    TheEyeLogEntry->m_private = NULL;
+    Py_INCREF(TheEyeLogEntry);
+    PyModule_AddObject(m, "_TheEyeLogEntry", (PyObject*)TheEyeLogEntry);
 
 //    PyEyeError = PyErr_NewException("pyeye.PyEyeError", NULL, NULL);
 //    Py_INCREF(&PyEyeError);
