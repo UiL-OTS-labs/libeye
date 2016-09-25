@@ -1711,6 +1711,66 @@ static PyTypeObject TrialEndEntryType = {
 
 /***** EyeLog *****/
 
+/*
+ * This function is used to create A EyeLogEntry wrapper around a PEyeLogEntry
+ * pointer. The entry provided by this function will be owned by the returned
+ * reference. Therefore think about cloning the entry before providing it to 
+ * this function to prevent double delete.
+ */
+static EyeLogEntry*
+PEyeLogEntry_createWrapper(PEyeLogEntry* entry)
+{
+    assert(entry);
+
+    EyeLogEntry* newentry = NULL;
+
+    switch (entry->getEntryType()) {
+        case LGAZE:
+        case RGAZE:
+        case AVGGAZE:
+            newentry = (EyeLogEntry*) EyeLogEntry_new(&GazeEntryType, NULL, NULL);
+            newentry->m_private = entry;
+            break;
+        case LFIX:
+        case RFIX:
+        case AVGFIX:
+            newentry = (EyeLogEntry*) EyeLogEntry_new(&FixationEntryType, NULL, NULL);
+            newentry->m_private = entry;
+            break;
+        case STIMULUS:
+            assert(0); // implement
+            break;
+        case MESSAGE:
+            newentry = (EyeLogEntry*) EyeLogEntry_new(&MessageEntryType, NULL, NULL);
+            newentry->m_private = entry;
+            break;
+        case LSAC:
+        case RSAC:
+        case AVGSAC:
+            newentry = (EyeLogEntry*) EyeLogEntry_new(&SaccadeEntryType, NULL, NULL);
+            newentry->m_private = entry;
+            break;
+        case TRIAL:
+            newentry = (EyeLogEntry*) EyeLogEntry_new(&TrialEntryType, NULL, NULL);
+            newentry->m_private = entry;
+            break;
+        case TRIALSTART:
+            newentry = (EyeLogEntry*) EyeLogEntry_new(&TrialStartEntryType, NULL, NULL);
+            newentry->m_private = entry;
+            break;
+        case TRIALEND:
+            newentry = (EyeLogEntry*) EyeLogEntry_new(&TrialEndEntryType, NULL, NULL);
+            newentry->m_private = entry;
+            break;
+        default:
+            assert(0); // unimplemented type
+    }
+
+    Py_INCREF(newentry);
+
+    return newentry;
+}
+
 typedef struct {
     PyObject_HEAD
     PEyeLog* m_log;
@@ -1879,8 +1939,30 @@ EyeLog_getFilename(EyeLog* self)
 static PyObject*
 EyeLog_getEntries(EyeLog* self)
 {
-    PyErr_SetString(PyExc_NotImplementedError, "Implement ");
-    return NULL;
+    const DArray<PEntryPtr>& array = self->m_log->getEntries();
+
+    PyObject *list = PyList_New(array.size());
+    if (!list)
+        return NULL;
+
+    for ( unsigned i = 0; i < array.size(); i++) {
+        PEntryPtr clone = array[i]->clone();
+        if(!clone) {
+            Py_DECREF(list);
+            return PyErr_NoMemory();
+        }
+        
+        EyeLogEntry* entry = PEyeLogEntry_createWrapper(clone);
+        
+        if (!entry) {
+            Py_DECREF(list);
+            return PyErr_NoMemory();
+        }
+
+        PyList_SET_ITEM(list, i, (PyObject*) entry);
+    }
+
+    return list;
 }
 
 static PyObject*
