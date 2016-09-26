@@ -173,7 +173,7 @@ void PEyeLog::setEntries(const PEntryVec& entries, bool empty)
 {
     if (empty)
         clear();
-    m_entries = entries;
+    m_entries.insert(m_entries.end(), entries.begin(), entries.end());
 }
 
 int PEyeLog::read(const String& file, bool clear_content)
