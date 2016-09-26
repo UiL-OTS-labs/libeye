@@ -1968,8 +1968,43 @@ EyeLog_getEntries(EyeLog* self)
 static PyObject*
 EyeLog_setEntries(EyeLog* self, PyObject* args)
 {
-    PyErr_SetString(PyExc_NotImplementedError, "Implement ");
-    return NULL;
+    PyObject* list = NULL;
+    int i, clear=1;
+    Py_ssize_t size;
+    PEntryVec clones;
+
+    if(!PyArg_ParseTuple(args, "O!|i", &PyList_Type, &list, &clear))
+        return NULL;
+    
+    size = PyList_Size(list);
+    
+    /* loop over all entries to determine whether all type derive
+     * from EyeLogEntry
+     */
+    try {
+        clones.reserve(size);
+        for (i = 0; i < size ; i++) {
+            EyeLogEntry* entry = (EyeLogEntry*) PyList_GET_ITEM(list, i);
+            if (!PyObject_IsInstance((PyObject*) entry,
+                                    (PyObject*) &EyeLogEntryType)
+                    ) {
+                PyErr_SetString(PyExc_TypeError,
+                        "Not all instance are derived of EyeLogEntry"
+                        );
+                destroyPEntyVec(clones);
+                return NULL;
+            }
+            clones.push_back(entry->m_private->clone());
+        }
+    }
+    catch (std::bad_alloc& e) {
+        destroyPEntyVec(clones);
+        return PyErr_NoMemory();
+    }
+
+    // The log will clear the cloned entries.
+    self->m_log->setEntries(clones, clear);
+    Py_RETURN_NONE;
 }
 
 static PyMethodDef EyeLog_methods[] = {
