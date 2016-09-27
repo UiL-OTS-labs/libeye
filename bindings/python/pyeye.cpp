@@ -2015,7 +2015,8 @@ static PyMethodDef EyeLog_methods[] = {
     {"clear", (PyCFunction) EyeLog_clear, METH_NOARGS,
         "Clear all logentries from the log."},
     {"reserve", (PyCFunction) EyeLog_reserve, METH_VARARGS,
-        "Reserve a number of places inside the log, this is probably a small optimalisation in python."},
+        "Reserve a number of places inside the log, this is probably "
+        "a small optimalisation in python."},
     {"addEntry",(PyCFunction) EyeLog_addEntry,METH_VARARGS,
         "Add a log entry to the log."},
     {"write",(PyCFunction) EyeLog_write,METH_VARARGS,
@@ -2076,6 +2077,133 @@ static PyTypeObject EyeLogType = {
     (initproc)EyeLog_init,  /*tp_init */
     0,
     EyeLog_new,
+};
+
+/***** PExperiment implementation *****/
+
+typedef struct {
+    PyObject_HEAD
+    PExperiment* m_experiment;
+} Experiment;
+
+void
+Experiment_dealloc(Experiment* self)
+{
+    delete self->m_experiment;
+    Py_TYPE(self)->tp_free((PyObject*) self);
+}
+
+static PyObject*
+Experiment_new(PyTypeObject *type, PyObject* args, PyObject* kwds)
+{
+    Experiment* ret = NULL;
+    ret = (Experiment*) type->tp_alloc(type, 0);
+
+    if (ret)
+        ret->m_experiment = NULL;
+    else
+        PyErr_NoMemory();
+
+    return (PyObject*)ret;
+}
+
+static int
+Experiment_init(Experiment* self, PyObject* args, PyOject* keywords)
+{
+    PyObject*   list= NULL;
+    EyeLog*     log = NULL;
+    static const char* kwlist[] =  {"entries", "log", NULL};
+    
+    if (!PyArg_ParseTupleAndKeywords(args, "|O!O!", kwlist,
+                &PyList_Type, &list,
+                &EyeLogType, &log
+                ))
+        return -1;
+
+    if (bool(list) == bool(log)) {
+        PyErr_SetString(PyExc_RuntimeError,
+                "Specify entries (list of logentries) or EyeLog log, not both.");
+        return NULL;
+    }
+
+    try {
+        if (list) {
+
+            Py_ssize_t size = PyList_Size(list);
+            DArray<PEntryPtr> clones;
+            clones.reserve(size);
+            for (int i = 0; i < size; i++) {
+                PyOject* entry = PyList_GET_ITEM(list, i);
+                if (!PyObject_IsInstance(entry, (PyObject*) &EyeLogEntryType)){
+                    destroyPEntyVec(clones);
+                    PyErr_SetString(PyExc_TypeError, "Non eyelogtry in list");
+                    return -1;
+                }
+                clones.push_back(entry);
+            }
+            /*
+             * Check whether the experiment frees the log entries.
+             */ 
+            //the experiment is responible to 
+            self->m_experiment = new PExperiment(entries);
+        }
+        if (log) {
+            self->m_experiment = new PExperiment(*(log->m_log));
+        }
+    }
+    catch (std::bad_alloc& e) {
+        PyErr_NoMemory();
+        return -1;
+    }
+    catch (...) {
+        PyErr_SetString(PyExc_RuntimeError, "Experiment_init: unknown exception.");
+        return -1;
+    }
+    return 0;
+}
+
+static PyTypeObject ExperimentType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                          /*ob_size*/   // for binary compatibility
+    "pyeye.Experiment",         /*tp_name*/
+    sizeof(Experiment),         /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    (destructor)Experiment_dealloc, /*tp_dealloc*/
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_compare*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash */
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
+    "An Experiment captures a number of trials, the trials encapsulate the"
+    "events (EyeLogEntries) that together form an experiment.",
+                                /*tp_doc*/
+    0,		                    /*tp_traverse */
+    0,		                    /*tp_clear */
+    0,		                    /*tp_richcompare */
+    0,		                    /*tp_weaklistoffset */
+    0,		                    /*tp_iter */
+    0,		                    /*tp_iternext */
+    Experiment_methods,         /*tp_methods */
+    0,                          /*tp_members */
+    0,                          /*tp_getset */
+    0,                          /*tp_base */
+    0,                          /*tp_dict */
+    0,                          /*tp_descr_get */
+    0,                          /*tp_descr_set */
+    0,                          /*tp_dictoffset */
+    (initproc)Experiment_init,  /*tp_init */
+    0,
+    Experiment_new,
 };
 
 /***** Module functions *****/
