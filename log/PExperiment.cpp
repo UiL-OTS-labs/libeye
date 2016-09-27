@@ -169,10 +169,9 @@ void PExperiment::initFromEntryVec(const PEntryVec& entries)
     }
 }
 
-
 bool PExperiment::operator==(const PExperiment& rhs) const
 {
-    if (m_metadata.size() == rhs.m_metadata.size())
+    if (m_metadata.size() != rhs.m_metadata.size())
         return false;
     for (unsigned i = 0; i < m_metadata.size(); i++)
         if (*m_metadata[i] != *rhs.m_metadata[i])
@@ -192,9 +191,7 @@ unsigned PExperiment::nTrials()const
 
 void PExperiment::getLog(PEyeLog& log, bool append)const
 {
-    if (!append)
-        log.clear();
-    log.setEntries(m_metadata, false);
+    log.setEntries(m_metadata, !append);
     for (const auto& trial : m_trials)
         log.setEntries(copyPEntryVec(trial.getEntries()), false);
 }
