@@ -153,11 +153,9 @@ class PExperiment {
         unsigned nTrials()const;
 
         /**
-         * Gets the trial identifier
-         */
-        String identifier()const;
-
-        /**
+         *
+         * TODO, where do we want to save the participant group?
+         *
          * Gets the group identifier
          */
         String group()const;
