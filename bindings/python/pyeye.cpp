@@ -287,7 +287,7 @@ static PyTypeObject EyeLogEntryType = {
     0,                          /*tp_as_mapping*/
     0,                          /*tp_hash */
     0,                          /*tp_call*/
-    EyeLogEntry_str,            /*tp_str*/
+    (reprfunc)EyeLogEntry_str,  /*tp_str*/
     0,                          /*tp_getattro*/
     0,                          /*tp_setattro*/
     0,                          /*tp_as_buffer*/
@@ -2108,13 +2108,13 @@ Experiment_new(PyTypeObject *type, PyObject* args, PyObject* kwds)
 }
 
 static int
-Experiment_init(Experiment* self, PyObject* args, PyOject* keywords)
+Experiment_init(Experiment* self, PyObject* args, PyObject* keywords)
 {
     PyObject*   list= NULL;
     EyeLog*     log = NULL;
-    static const char* kwlist[] =  {"entries", "log", NULL};
+    static char* kwlist[] =  {"entries", "log", NULL};
     
-    if (!PyArg_ParseTupleAndKeywords(args, "|O!O!", kwlist,
+    if (!PyArg_ParseTupleAndKeywords(args, keywords, "|O!O!", kwlist,
                 &PyList_Type, &list,
                 &EyeLogType, &log
                 ))
@@ -2123,7 +2123,7 @@ Experiment_init(Experiment* self, PyObject* args, PyOject* keywords)
     if (bool(list) == bool(log)) {
         PyErr_SetString(PyExc_RuntimeError,
                 "Specify entries (list of logentries) or EyeLog log, not both.");
-        return NULL;
+        return -1;
     }
 
     try {
@@ -2133,19 +2133,19 @@ Experiment_init(Experiment* self, PyObject* args, PyOject* keywords)
             DArray<PEntryPtr> clones;
             clones.reserve(size);
             for (int i = 0; i < size; i++) {
-                PyOject* entry = PyList_GET_ITEM(list, i);
+                PyObject* entry = PyList_GET_ITEM(list, i);
                 if (!PyObject_IsInstance(entry, (PyObject*) &EyeLogEntryType)){
                     destroyPEntyVec(clones);
                     PyErr_SetString(PyExc_TypeError, "Non eyelogtry in list");
                     return -1;
                 }
-                clones.push_back(entry);
+                clones.push_back(((EyeLogEntry*)entry)->m_private);
             }
             /*
              * Check whether the experiment frees the log entries.
              */ 
             //the experiment is responible to 
-            self->m_experiment = new PExperiment(entries);
+            self->m_experiment = new PExperiment(clones);
         }
         if (log) {
             self->m_experiment = new PExperiment(*(log->m_log));
@@ -2161,6 +2161,20 @@ Experiment_init(Experiment* self, PyObject* args, PyOject* keywords)
     }
     return 0;
 }
+
+static PyObject*
+Experiment_nTrials (Experiment* self){
+    return PyInt_FromLong(self->m_experiment->nTrials());
+}
+
+static PyMethodDef Experiment_methods[] = {
+    {"nTrials", (PyCFunction) Experiment_nTrials, METH_NOARGS,
+        "indicates how many trials are contained in the experiment."},
+    {NULL}
+};
+
+static PyObject*
+Experiment_richCmp(Experiment* self, PyObject* rhs, int cmp);
 
 static PyTypeObject ExperimentType = {
     PyObject_HEAD_INIT(NULL)
@@ -2189,7 +2203,7 @@ static PyTypeObject ExperimentType = {
                                 /*tp_doc*/
     0,		                    /*tp_traverse */
     0,		                    /*tp_clear */
-    0,		                    /*tp_richcompare */
+    (richcmpfunc)Experiment_richCmp,/*tp_richcompare */
     0,		                    /*tp_weaklistoffset */
     0,		                    /*tp_iter */
     0,		                    /*tp_iternext */
@@ -2205,6 +2219,31 @@ static PyTypeObject ExperimentType = {
     0,
     Experiment_new,
 };
+
+static PyObject*
+Experiment_richCmp(Experiment* self, PyObject* rhs, int cmp)
+{
+    Experiment* righths;
+
+    if (!PyObject_TypeCheck(rhs, &ExperimentType)) {
+        PyErr_SetString(PyExc_TypeError, "Unexpected type.");
+        return NULL;
+    }
+
+    if (cmp != Py_EQ && cmp != Py_NE) {
+        PyErr_SetString(PyExc_NotImplementedError,
+                "Only operator == and != are defined"
+                );
+        return NULL;
+    }
+
+    righths = (Experiment*) rhs;
+
+    if (cmp == Py_EQ) 
+        return PyBool_FromLong(self->m_experiment == righths->m_experiment);
+    else // cmp == Py_NE
+        return PyBool_FromLong(self->m_experiment != righths->m_experiment);
+}
 
 /***** Module functions *****/
 
@@ -2256,7 +2295,11 @@ initpyeye(void)
         return;
 
     // Ready eyelog
-    if(PyType_Ready(&EyeLogType) < 0)
+    if (PyType_Ready(&EyeLogType) < 0)
+        return;
+
+    // Ready experiment
+    if (PyType_Ready(&ExperimentType) < 0)
         return;
 
     m = Py_InitModule3(module_name, PyEyeMethods, module_doc);
@@ -2294,6 +2337,10 @@ initpyeye(void)
     // Add eyelog.
     Py_INCREF(&EyeLogType);
     PyModule_AddObject(m, "EyeLog", (PyObject*) &EyeLogType);
+    
+    // Add experiment.
+    Py_INCREF(&ExperimentType);
+    PyModule_AddObject(m, "Experiment", (PyObject*) &ExperimentType);
 
     
     pyeye_module_add_constants(m);
