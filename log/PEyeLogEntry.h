@@ -19,6 +19,16 @@
  * License along with this library; if not, see Licenses at www.gnu.org.
  */
 
+/**
+ * \file PEyeLogEntry.h
+ *
+ * This file includes the PEyeLogEntry class. This is an abstract class
+ * that has many concrete classes that derive from it. The derived
+ * classes are all event that occur in an eyemomement experiment.
+ * The thing they have all in common is an identifier that tell what kind
+ * of event it is and a timestamp when it occurred in the experiment.
+ */
+
 #ifndef PEYELOGENTRY_H
 #define PEYELOGENTRY_H
 
@@ -42,7 +52,14 @@ typedef PEyeLogEntry* PEntryPtr;
 typedef DArray<PEntryPtr> PEntryVec;
 
 /**
- * copy a DArray with PEntryPtr.
+ * Copy a DArray with PEntryPtr.
+ *
+ * This functionmakes a deep copy of the entries given as argument.
+ * Since it is a deep copy, both the input and output vector
+ * contain PEyeLogEntry 's that should eventually be deleted by the caller.
+ *
+ * @param[in] entries a PEntryVec
+ *
  */
 PEntryVec copyPEntryVec(const PEntryVec& entries);
 

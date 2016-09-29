@@ -118,6 +118,17 @@ class PExperiment {
         PExperiment();
         
         /**
+         * Init an experiment from another one.
+         */
+        PExperiment(const PExperiment& rhs);
+
+        /**
+         * destroys the meta data explicitly.
+         */
+        virtual ~PExperiment();
+            
+        
+        /**
          * Create an experiment from an DArray of PEyeLogEntry.
          */
         PExperiment(const DArray<PEyeLogEntry*>& entries);

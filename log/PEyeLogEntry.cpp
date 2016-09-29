@@ -29,17 +29,16 @@
 
 PEntryVec copyPEntryVec(const PEntryVec& entries)
 {
-    PEntryVec out(entries.size());
-    auto input = entries.begin();
-    auto output = out.begin();
-    while (input < entries.end())
-        *output++ = *input++;
+    PEntryVec out;
+    out.reserve(entries.size());
+    for (PEntryVec::size_type i = 0; i < entries.size(); i++)
+        out.push_back(entries[i]->clone());
     return out;
 }
 
 void destroyPEntyVec(PEntryVec& entries)
 {
-    for (auto i = 0u; i < entries.size(); i++)
+    for (PEntryVec::size_type i = 0; i < entries.size(); i++)
         delete entries[i];
 }
 

@@ -40,6 +40,8 @@ PTrial::PTrial()
 
 PTrial::~PTrial()
 {
+    for (auto& pair : m_entries)
+        destroyPEntyVec(pair.second);
 }
 
 void PTrial::addEntry(const PEntryPtr entry)
@@ -124,11 +126,26 @@ String PTrial::getGroup() const
     return m_entry.getGroup();
 }
 
+/* **** implementation of PExperiment **** */
+
 PExperiment::PExperiment()
+    :
+        m_metadata()
 {
 }
 
-PExperiment::PExperiment(const DArray<PEyeLogEntry*>& entries)
+PExperiment::PExperiment(const PExperiment& rhs)
+{
+    m_metadata = copyPEntryVec(rhs.m_metadata);
+    m_trials = rhs.m_trials;
+}
+
+PExperiment::~PExperiment()
+{
+    destroyPEntyVec(m_metadata);
+}
+
+PExperiment::PExperiment(const PEntryVec& entries)
 {
     initFromEntryVec(entries);
 }
