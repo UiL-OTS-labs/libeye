@@ -19,7 +19,9 @@ const char* module_doc  = "The pyeye module is a pythonic wrapper around libeye"
 /***** Forward declarations *****/
 
 struct _EyeLogEntry;
+typedef struct _EyeLogEntry EyeLogEntry;
 
+static EyeLogEntry* PEyeLogEntry_createWrapper(PEyeLogEntry* entry);
 static PyObject* EyeLogEntry_compare(struct _EyeLogEntry* self, PyObject* args);
 static int EyeLogEntry_Compare(struct _EyeLogEntry* self, PyObject* rhs);
 
@@ -34,6 +36,51 @@ static int EyeLogEntry_Compare(struct _EyeLogEntry* self, PyObject* rhs);
 
 const PyTypeObject* getEyeLogEntryClass();
 
+/**
+ * Create a Python list from a PEntryVec
+ *
+ * Creates a new list with logentries. If the logentries cannot be created
+ * the function sets the appropriate python exception and returns NULL
+ *
+ * @return new python list of entries or NULL.
+ */
+static PyObject*
+createListFromEntryVec(const PEntryVec& vec, bool clone)
+{
+    Py_ssize_t size = vec.size();
+    PyObject*  list = PyList_New(size);
+
+    if (!list)
+        return PyErr_NoMemory();
+
+    try {
+        EyeLogEntry* entry;
+        for (unsigned i = 0; i < vec.size(); i++) {
+            if (clone)
+                entry = PEyeLogEntry_createWrapper(vec[i]->clone());
+            else 
+                entry = PEyeLogEntry_createWrapper(vec[i]);
+
+            if (!entry) {
+                Py_DECREF(list);
+                return PyErr_NoMemory();
+            }
+            PyList_SET_ITEM(list, i, (PyObject*) entry);
+        }
+    }
+    catch (std::bad_alloc& e) {
+        Py_DECREF(list);
+        return PyErr_NoMemory();
+    }
+    catch (...) {
+        Py_DECREF(list);
+        PyErr_SetString(PyExc_RuntimeError,
+                "createListFromEntryVec Unknown exception"
+                );
+        return NULL;
+    }
+    return list;
+}
 
 /***** Module objects *****/
 
@@ -1941,26 +1988,7 @@ EyeLog_getEntries(EyeLog* self)
 {
     const DArray<PEntryPtr>& array = self->m_log->getEntries();
 
-    PyObject *list = PyList_New(array.size());
-    if (!list)
-        return NULL;
-
-    for ( unsigned i = 0; i < array.size(); i++) {
-        PEntryPtr clone = array[i]->clone();
-        if(!clone) {
-            Py_DECREF(list);
-            return PyErr_NoMemory();
-        }
-        
-        EyeLogEntry* entry = PEyeLogEntry_createWrapper(clone);
-        
-        if (!entry) {
-            Py_DECREF(list);
-            return PyErr_NoMemory();
-        }
-
-        PyList_SET_ITEM(list, i, (PyObject*) entry);
-    }
+    PyObject* list = createListFromEntryVec(array, true);
 
     return list;
 }
@@ -2245,7 +2273,193 @@ Experiment_richCmp(Experiment* self, PyObject* rhs, int cmp)
         return PyBool_FromLong(self->m_experiment != righths->m_experiment);
 }
 
-/***** Module functions *****/
+/***** PTrial implementation *****/
+
+typedef struct {
+    PyObject_HEAD
+    PTrial* m_trial;
+} Trial;
+
+void
+Trial_dealloc(Trial* self)
+{
+    delete self->m_trial;
+    Py_TYPE(self)->tp_free((PyObject*) self);
+}
+
+static PyObject*
+Trial_new(PyTypeObject *type, PyObject* args, PyObject* kwds)
+{
+    Trial* ret = NULL;
+    ret = (Trial*) type->tp_alloc(type, 0);
+
+    if (ret)
+        ret->m_trial = NULL;
+    else
+        PyErr_NoMemory();
+
+    return (PyObject*)ret;
+}
+
+static int
+Trial_init(Trial* self, PyObject* args, PyObject* keywords)
+{
+    TrialEntry* tentry = NULL;
+
+    static char* kwlist[] =  {"trialentry", NULL};
+    
+    if (!PyArg_ParseTupleAndKeywords(args, keywords, "|O!", kwlist,
+                &TrialEntryType, &tentry
+                ))
+        return -1;
+
+
+    try {
+        if (tentry) {
+            self->m_trial = new PTrial(
+                    static_cast<PTrialEntry*>(tentry->m_parent.m_private)
+                    );
+        } else {
+            self->m_trial = new PTrial();
+        }
+    }
+    catch (std::bad_alloc& e) {
+        PyErr_NoMemory();
+        return -1;
+    }
+    catch (...) {
+        PyErr_SetString(PyExc_RuntimeError, "Trial_init: unknown exception.");
+        return -1;
+    }
+    return 0;
+}
+
+static PyObject*
+Trial_addEntry (Trial* self, PyObject* args) {
+
+    EyeLogEntry* entry = NULL;
+
+    if (!PyArg_ParseTuple(args, "O!", &EyeLogEntryType, &entry))
+        return NULL;
+
+    self->m_trial->addEntry(entry->m_private);
+
+    Py_RETURN_NONE;
+}
+
+static PyObject*
+Trial_getEntries(Trial* self, PyObject* args) {
+    return createListFromEntryVec(self->m_trial->getEntries(), true);
+}
+
+static PyObject*
+Trial_clear(Trial* self)
+{
+    self->m_trial->clear();
+    Py_RETURN_NONE;
+}
+
+static PyObject*
+Trial_getIdentifier(Trial* self)
+{
+    const char* ident = self->m_trial->getIdentifier().c_str();
+    return PyString_FromString(ident);
+}
+
+static PyObject*
+Trial_getGroup(Trial* self)
+{
+    const char* group = self->m_trial->getGroup().c_str();
+    return PyString_FromString(group);
+}
+
+static PyMethodDef Trial_methods[] = {
+    {"addEntry", (PyCFunction) Trial_addEntry, METH_VARARGS,
+        "Add an eyelogentry to the trial."},
+    {"getEntries", (PyCFunction) Trial_getEntries, METH_NOARGS,
+        "Add an eyelogentry to the trial."},
+    {"clear", (PyCFunction) Trial_clear, METH_NOARGS,
+        "Add an eyelogentry to the trial."},
+    {"getIdentifier", (PyCFunction) Trial_getIdentifier, METH_NOARGS,
+        "Obtain the trial identifier."},
+    {"getGroup", (PyCFunction) Trial_getGroup, METH_VARARGS,
+        "Get the group identifier of the participant."},
+    {NULL}
+};
+
+static PyObject*
+Trial_richCmp(Trial* self, PyObject* rhs, int cmp);
+
+static PyTypeObject TrialType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                          /*ob_size*/   // for binary compatibility
+    "pyeye.Trial",              /*tp_name*/
+    sizeof(Trial),              /*tp_basicsize*/
+    0,                          /*tp_itemsize*/
+    (destructor)Trial_dealloc,  /*tp_dealloc*/
+    0,                          /*tp_print*/
+    0,                          /*tp_getattr*/
+    0,                          /*tp_setattr*/
+    0,                          /*tp_compare*/
+    0,                          /*tp_repr*/
+    0,                          /*tp_as_number*/
+    0,                          /*tp_as_sequence*/
+    0,                          /*tp_as_mapping*/
+    0,                          /*tp_hash */
+    0,                          /*tp_call*/
+    0,                          /*tp_str*/
+    0,                          /*tp_getattro*/
+    0,                          /*tp_setattro*/
+    0,                          /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE,         /*tp_flags*/
+    "An Trial captures a number of trials, the trials encapsulate the"
+    "events (EyeLogEntries) that together form an trial.",
+                                /*tp_doc*/
+    0,		                    /*tp_traverse */
+    0,		                    /*tp_clear */
+    (richcmpfunc)Trial_richCmp, /*tp_richcompare */
+    0,		                    /*tp_weaklistoffset */
+    0,		                    /*tp_iter */
+    0,		                    /*tp_iternext */
+    Trial_methods,              /*tp_methods */
+    0,                          /*tp_members */
+    0,                          /*tp_getset */
+    0,                          /*tp_base */
+    0,                          /*tp_dict */
+    0,                          /*tp_descr_get */
+    0,                          /*tp_descr_set */
+    0,                          /*tp_dictoffset */
+    (initproc)Trial_init,       /*tp_init */
+    0,
+    Trial_new,
+};
+
+static PyObject*
+Trial_richCmp(Trial* self, PyObject* rhs, int cmp)
+{
+    Trial* righths;
+
+    if (!PyObject_TypeCheck(rhs, &TrialType)) {
+        PyErr_SetString(PyExc_TypeError, "Unexpected type.");
+        return NULL;
+    }
+
+    if (cmp != Py_EQ && cmp != Py_NE) {
+        PyErr_SetString(PyExc_NotImplementedError,
+                "Only operator == and != are defined"
+                );
+        return NULL;
+    }
+
+    righths = (Trial*) rhs;
+
+    if (cmp == Py_EQ) 
+        return PyBool_FromLong(self->m_trial == righths->m_trial);
+    else // cmp == Py_NE
+        return PyBool_FromLong(self->m_trial != righths->m_trial);
+}
+
+/***** Module scope functions *****/
 
 static PyMethodDef PyEyeMethods[] = {
     //{"system",  spam_system, METH_VARARGS, "Execute a shell command."},
@@ -2301,6 +2515,10 @@ initpyeye(void)
     // Ready experiment
     if (PyType_Ready(&ExperimentType) < 0)
         return;
+    
+    // Ready Trial 
+    if (PyType_Ready(&TrialType) < 0)
+        return;
 
     m = Py_InitModule3(module_name, PyEyeMethods, module_doc);
     if(m == NULL)
@@ -2341,7 +2559,10 @@ initpyeye(void)
     // Add experiment.
     Py_INCREF(&ExperimentType);
     PyModule_AddObject(m, "Experiment", (PyObject*) &ExperimentType);
-
+    
+    // Add Trial.
+    Py_INCREF(&TrialType);
+    PyModule_AddObject(m, "Trial", (PyObject*) &TrialType);
     
     pyeye_module_add_constants(m);
     
