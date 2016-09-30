@@ -96,10 +96,12 @@ PEntryVec PTrial::getEntries() const
 
 void PTrial::clear() 
 {
+    // Destroy all vectors inside the map
     for(auto& pair: m_entries) {
         auto& vec = pair.second;
         destroyPEntyVec(vec);
     }
+    // clear all empty keys.
     m_entries.clear();
 }
 
@@ -251,6 +253,9 @@ unsigned PExperiment::nTrials()const
 void PExperiment::getLog(PEyeLog& log, bool append)const
 {
     log.setEntries(m_metadata, !append);
-    for (const auto& trial : m_trials)
-        log.setEntries(copyPEntryVec(trial.getEntries()), false);
+    for (const auto& trial : m_trials) {
+        PEntryVec temp = trial.getEntries();
+        log.setEntries(temp, false);
+        destroyPEntyVec(temp);
+    }
 }
