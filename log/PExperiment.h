@@ -32,7 +32,15 @@ class PTrial {
 
         PTrial (const PTrialEntry* entry);
         PTrial (const PTrialEntry& entry);
+        PTrial (const PTrial& rhs);
         PTrial ();
+
+        /**
+         * This makes a full copy of the rhs
+         *
+         * It also frees currently contained PEyeLogEntries
+         */
+        PTrial& operator=(const PTrial& rhs);
 
         virtual ~PTrial();
 
@@ -116,6 +124,25 @@ class PExperiment {
          * Create an empty PExperiment.
          */
         PExperiment();
+        
+        /**
+         * Init an experiment from another one.
+         */
+        PExperiment(const PExperiment& rhs);
+
+        /**
+         * destroys the meta data explicitly.
+         */
+        virtual ~PExperiment();
+
+        /**
+         * copies the right hand side.
+         *
+         * All contained PEyelogEntries are copied deeply. All
+         * contained entries are freed.
+         */
+        PExperiment& operator= (const PExperiment& rhs);
+            
         
         /**
          * Create an experiment from an DArray of PEyeLogEntry.

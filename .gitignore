@@ -27,6 +27,9 @@
 *.out
 *.app
 
+# vim temporaries
+*\.*.sw[a-z]
+
 # directories
 Debug/
 Release/
