@@ -208,7 +208,8 @@ static PyObject* EyeLogEntry_clone(EyeLogEntry* self, PyObject* args)
 
 static PyObject* EyeLogEntry_toString(EyeLogEntry* self, PyObject* args)
 {
-    return PyString_FromString(self->m_private->toString().c_str());
+    String temp = self->m_private->toString();
+    return PyString_FromString(temp.c_str());
 }
 
 static PyObject* EyeLogEntry_writeBinary(PyObject* self, PyObject* args)
@@ -2175,9 +2176,11 @@ Experiment_init(Experiment* self, PyObject* args, PyObject* keywords)
             //the experiment is responible to 
             self->m_experiment = new PExperiment(clones);
         }
-        if (log) {
+        else if (log) {
             self->m_experiment = new PExperiment(*(log->m_log));
         }
+        else
+            self->m_experiment = new PExperiment;
     }
     catch (std::bad_alloc& e) {
         PyErr_NoMemory();
@@ -2195,9 +2198,41 @@ Experiment_nTrials (Experiment* self){
     return PyInt_FromLong(self->m_experiment->nTrials());
 }
 
+static PyObject*
+Experiment_getLog(Experiment* self, PyObject* args)
+{
+    EyeLog* ret;
+    int     append = 0;
+
+    if (!PyArg_ParseTuple(args, "O!|i",
+                &EyeLogType, &ret,
+                &append
+                )
+       ) {
+        return NULL;
+    }
+
+    try {
+        self->m_experiment->getLog(*ret->m_log, bool(append));
+    }
+    catch (std::bad_alloc& e) {
+        Py_DECREF(ret);
+        return PyErr_NoMemory();
+    }
+    catch (...) {
+        Py_DECREF(ret);
+        PyErr_SetString(PyExc_RuntimeError, "Experiment_getLog unknow error.");
+        return NULL;
+    }
+
+    Py_RETURN_NONE;
+}
+
 static PyMethodDef Experiment_methods[] = {
     {"nTrials", (PyCFunction) Experiment_nTrials, METH_NOARGS,
-        "indicates how many trials are contained in the experiment."},
+        "Indicates how many trials are contained in the experiment."},
+    {"getLog", (PyCFunction) Experiment_getLog, METH_VARARGS,
+        "Obtain a EyeLog as output."},
     {NULL}
 };
 
