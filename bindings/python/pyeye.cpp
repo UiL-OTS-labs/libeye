@@ -2384,7 +2384,8 @@ Trial_addEntry (Trial* self, PyObject* args) {
 
 static PyObject*
 Trial_getEntries(Trial* self, PyObject* args) {
-    return createListFromEntryVec(self->m_trial->getEntries(), true);
+    //The trial allready clones the entries
+    return createListFromEntryVec(self->m_trial->getEntries(), false);
 }
 
 static PyObject*
