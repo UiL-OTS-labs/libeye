@@ -99,6 +99,28 @@ public:
         
         destroyPEntyVec(meta);
     }
+    
+    void testLogAssignment() 
+    { 
+        TS_TRACE("Testing PExperiment log assignments");
+        PEntryVec meta;
+
+        meta.push_back(new PTrialEntry(0, "Trial", "Group"));
+        meta.push_back(new PGazeEntry(LGAZE, 1, 10, 10, 0));
+        meta.push_back(new PGazeEntry(RGAZE, 1, 10, 10, 0));
+        meta.push_back(new PTrialEntry(10, "Trial", "Group"));
+        meta.push_back(new PGazeEntry(LGAZE, 11, 10, 10, 0));
+        meta.push_back(new PGazeEntry(LGAZE, 12, 10, 10, 0));
+        meta.push_back(new PGazeEntry(RGAZE, 12, 10, 10, 0));
+        meta.push_back(new PMessageEntry(21, "Hi"));
+
+        PEyeLog log;
+        PExperiment exp(meta);
+
+        exp.getLog(log);
+
+        destroyPEntyVec(meta);
+    }
 };
 
 

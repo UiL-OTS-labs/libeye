@@ -152,9 +152,7 @@ void PEyeLog::close()
 
 void PEyeLog::clear()
 {
-    for (unsigned i = 0; i < m_entries.size(); i++) {
-        delete m_entries[i];
-    }
+    destroyPEntyVec(m_entries);
     m_entries.clear();
 }
 
@@ -173,7 +171,10 @@ void PEyeLog::setEntries(const PEntryVec& entries, bool empty)
 {
     if (empty)
         clear();
-    m_entries.insert(m_entries.end(), entries.begin(), entries.end());
+
+    m_entries.reserve(entries.size() + m_entries.size());
+    for (const auto* entry : entries)
+        m_entries.push_back(entry->clone());
 }
 
 int PEyeLog::read(const String& file, bool clear_content)
