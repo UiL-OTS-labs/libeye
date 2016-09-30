@@ -1,6 +1,7 @@
 #include <cxxtest/TestSuite.h>
 #include "../log/EyeLog.h"
 
+
 class ExperimentSuite: public CxxTest::TestSuite
 {
 public:
@@ -49,21 +50,55 @@ public:
         destroyPEntyVec(meta);
     }
 
-    void testTrialComparison()
+    void testExpTrialComparison()
     {
         TS_TRACE("Testing PExperiment comparisons");
         PEntryVec meta;
         PEntryVec metacp;
-        meta.push_back(new PTrialEntry());
-        meta.push_back(new PGazeEntry(LGAZE, 0, 10, 10, 0));
-        meta.push_back(new PGazeEntry(RGAZE, 0, 10, 10, 0));
+        meta.push_back(new PTrialEntry(0, "Trial", "Group"));
         meta.push_back(new PGazeEntry(LGAZE, 1, 10, 10, 0));
         meta.push_back(new PGazeEntry(RGAZE, 1, 10, 10, 0));
-        meta.push_back(new PMessageEntry(2, "Hi"));
+        meta.push_back(new PTrialEntry(10, "Trial", "Group"));
+        meta.push_back(new PGazeEntry(LGAZE, 10, 10, 10, 0));
+        meta.push_back(new PGazeEntry(LGAZE, 11, 10, 10, 0));
+        meta.push_back(new PGazeEntry(RGAZE, 11, 10, 10, 0));
+        meta.push_back(new PMessageEntry(21, "Hi"));
 
         metacp = copyPEntryVec(meta);
+
+        PExperiment exp(meta);
+        PExperiment expcp(metacp);
+
+        TS_ASSERT_EQUALS(exp, expcp);
+        
+        destroyPEntyVec(metacp);
+        destroyPEntyVec(meta);
     }
 
+    void testExpAssignment() 
+    { 
+        TS_TRACE("Testing PExperiment comparisons");
+        PEntryVec meta;
+        meta.push_back(new PTrialEntry(0, "Trial", "Group"));
+        meta.push_back(new PGazeEntry(LGAZE, 1, 10, 10, 0));
+        meta.push_back(new PGazeEntry(RGAZE, 1, 10, 10, 0));
+        meta.push_back(new PTrialEntry(10, "Trial", "Group"));
+        meta.push_back(new PGazeEntry(LGAZE, 11, 10, 10, 0));
+        meta.push_back(new PGazeEntry(LGAZE, 12, 10, 10, 0));
+        meta.push_back(new PGazeEntry(RGAZE, 12, 10, 10, 0));
+        meta.push_back(new PMessageEntry(21, "Hi"));
+
+        PExperiment exp(meta);
+        PExperiment expcp(exp);
+
+        TS_ASSERT_EQUALS(exp, expcp);
+
+        expcp = exp;
+
+        TS_ASSERT_EQUALS(exp, expcp);
+        
+        destroyPEntyVec(meta);
+    }
 };
 
 

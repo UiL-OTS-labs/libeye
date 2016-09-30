@@ -23,6 +23,14 @@
 #include "PExperiment.h"
 #include "PEyeLogEntry.h"
 
+PTrial::PTrial(const PTrial& rhs)
+    :m_entry(rhs.m_entry)
+{
+    for (const auto& pair : rhs.m_entries) {
+        m_entries[pair.first] =  copyPEntryVec(pair.second);
+    }
+}
+
 PTrial::PTrial(const PTrialEntry* entry)
     : m_entry(*entry)
 {
@@ -38,6 +46,16 @@ PTrial::PTrial()
 {
 }
 
+PTrial& PTrial::operator = (const PTrial& rhs)
+{
+    clear();
+    m_entry = rhs.m_entry;
+    for (const auto& pair : rhs.m_entries) {
+        m_entries[pair.first] =  copyPEntryVec(pair.second);
+    }
+    return *this;
+}
+
 PTrial::~PTrial()
 {
     for (auto& pair : m_entries)
@@ -48,8 +66,10 @@ void PTrial::addEntry(const PEntryPtr entry)
 {
     entrytype t = entry->getEntryType();
     auto it = m_entries.find(t);
-    if (it != m_entries.end())
+    if (it != m_entries.end()) {
         it->second.push_back(entry->clone());
+        return;
+    }
     m_entries[t] = PEntryVec();
     m_entries[t].push_back(entry->clone());
 }
@@ -153,6 +173,28 @@ PExperiment::PExperiment(const PEntryVec& entries)
 PExperiment::PExperiment(const PEyeLog& log)
 {
     initFromEntryVec(log.getEntries());
+}
+
+PExperiment& PExperiment::operator=(const PExperiment& rhs)
+{
+    m_trials.clear();
+    destroyPEntyVec(m_metadata);
+    PEntryVec initvec;
+    initvec.insert(initvec.end(),
+                   rhs.m_metadata.cbegin(),
+                   rhs.m_metadata.cend()
+                   );
+
+    for (unsigned i = 0; i < rhs.nTrials(); i++) {
+        const PEntryVec& tempvec = rhs.m_trials[i].getEntries();
+        initvec.insert(initvec.end(), tempvec.cbegin(), tempvec.cend());
+    }
+    
+    sortPEntryVec(initvec);
+    initFromEntryVec(initvec);
+    destroyPEntyVec(initvec);
+
+    return *this;
 }
 
 void PExperiment::initFromEntryVec(const PEntryVec& entries)

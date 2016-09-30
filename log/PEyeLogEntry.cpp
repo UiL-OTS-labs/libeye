@@ -22,8 +22,15 @@
 
 #include <cassert>
 #include <sstream>
+#include <algorithm>
 #include "PEyeLogEntry.h"
 #include "TypeDefs.h"
+
+struct PEntryPtrSortPredicate {
+    bool operator()(const PEntryPtr l, const PEntryPtr r) {
+        return l->compare(*r) < 0;
+    }
+};
 
 /* ** utility functions * **/
 
@@ -40,6 +47,11 @@ void destroyPEntyVec(PEntryVec& entries)
 {
     for (PEntryVec::size_type i = 0; i < entries.size(); i++)
         delete entries[i];
+}
+
+void sortPEntryVec(PEntryVec& vec)
+{
+    std::sort(vec.begin(), vec.end(), PEntryPtrSortPredicate());
 }
 
 

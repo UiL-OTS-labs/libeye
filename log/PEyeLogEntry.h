@@ -69,6 +69,11 @@ PEntryVec copyPEntryVec(const PEntryVec& entries);
  */
 void destroyPEntyVec(PEntryVec& entries);
 
+/**
+ * Sorts PEntryVec, sort the pointers as if they were the objects.
+ */
+void sortPEntryVec(PEntryVec& entries);
+
 class PEyeLogEntry {
 
 public :
