@@ -129,6 +129,9 @@ public :
 
 private:
 
+    PEyeLog(const PEyeLog&);
+    PEyeLog& operator=(const PEyeLog&);
+
     DArray<PEyeLogEntry*>   m_entries;
 
     mutable std::ofstream   m_file;
