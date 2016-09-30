@@ -49,6 +49,21 @@ public:
         destroyPEntyVec(meta);
     }
 
+    void testTrialComparison()
+    {
+        TS_TRACE("Testing PExperiment comparisons");
+        PEntryVec meta;
+        PEntryVec metacp;
+        meta.push_back(new PTrialEntry());
+        meta.push_back(new PGazeEntry(LGAZE, 0, 10, 10, 0));
+        meta.push_back(new PGazeEntry(RGAZE, 0, 10, 10, 0));
+        meta.push_back(new PGazeEntry(LGAZE, 1, 10, 10, 0));
+        meta.push_back(new PGazeEntry(RGAZE, 1, 10, 10, 0));
+        meta.push_back(new PMessageEntry(2, "Hi"));
+
+        metacp = copyPEntryVec(meta);
+    }
+
 };
 
 
