@@ -186,6 +186,22 @@ class PExperiment {
          * Gets the group identifier
          */
         String group()const;
+
+        /**
+         * Get trial from the experiment.
+         *
+         * @param [in] n the item to obtain, n must be 0 <= n < nTrials() 
+         * @return a reference to a contained trial.
+         */
+        PTrial& operator[] (DArray<PTrial>::size_type n);
+        
+        /**
+         * Get trial from the experiment.
+         *
+         * @param [in] n the item to obtain, n must be 0 <= n < nTrials() 
+         * @return a reference to a contained trial.
+         */
+        const PTrial& operator[] (DArray<PTrial>::size_type n) const;
     
     private:
 

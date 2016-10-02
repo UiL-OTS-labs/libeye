@@ -248,6 +248,16 @@ unsigned PExperiment::nTrials()const
     return m_trials.size();
 }
 
+PTrial& PExperiment::operator[] (DArray<PTrial>::size_type n)
+{
+    return m_trials[n];
+}
+
+const PTrial& PExperiment::operator[] (DArray<PTrial>::size_type n) const
+{
+    return m_trials[n];
+}
+
 void PExperiment::getLog(PEyeLog& log, bool append)const
 {
     log.setEntries(m_metadata, !append);
