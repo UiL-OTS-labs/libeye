@@ -167,10 +167,10 @@ class PExperiment {
         /**
          * Return the experiment in a log suitable for saving.
          *
-         * \param output [out] The output will be initialized
-         * \param append [in]  If append is true all entries
-         *                     will be appended to the log.
-         *                     otherwise it is cleared.
+         * \param [out] output  The output will be initialized
+         * \param [in]  append  If append is true all entries
+         *                      will be appended to the log.
+         *                      otherwise it is cleared.
          */
         void getLog(PEyeLog& output, bool append=false)const;
 

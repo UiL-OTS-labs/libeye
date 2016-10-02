@@ -44,6 +44,8 @@ int  readLog(PEyeLog* out, const String& filename);
  * PEyeLog is a utility to log events. Logged times are in milliseconds
  * Logged events start with their type sep zeptime sep eyetrackertime
  * It is possible to generate a Eyelink compatible logfile.
+ * The eyelog will destroy all entries that are given to it, either
+ * read from disk or via addEntrie(s).
  */
 class PEyeLog {
 
@@ -80,7 +82,11 @@ public :
     void reserve(unsigned size);
 
     /**
-     * Adds an entry to this log
+     * Adds an entry to this log.
+     *
+     * Add an entry to the log. Note the log takes ownership of the
+     * log entry, there for you might want to call PEyeLogEntry::clone()
+     * to pass this entry.
      */
     void addEntry(PEyeLogEntry* entry);
 
@@ -120,8 +126,10 @@ public :
     /**
      * Sets the logentries and optionally clear the existing.
      *
-     * Set the logentries and make sure they are sorted on
-     * time and entrytype.
+     * Sets the entries, although the array is const, the 
+     * entries are not, and the eyelog will own them
+     * and delete them when it is ready with them. Thus
+     * you might want to clone the entries prior to inserting them
      */
     void setEntries(const DArray<PEyeLogEntry*>& entries,
                     bool clear=true
