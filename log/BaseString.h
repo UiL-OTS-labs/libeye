@@ -26,9 +26,10 @@
 #include <utility>
 
 #include "DArray.h"
+#include "eyelog_export.h"
 
 template <typename T>
-class BaseString {
+class EYELOG_EXPORT BaseString {
 
     public:
 

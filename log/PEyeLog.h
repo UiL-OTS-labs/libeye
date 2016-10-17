@@ -47,7 +47,7 @@ int  readLog(PEyeLog* out, const String& filename);
  * The eyelog will destroy all entries that are given to it, either
  * read from disk or via addEntrie(s).
  */
-class PEyeLog {
+class EYELOG_EXPORT PEyeLog {
 
 public :
 

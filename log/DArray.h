@@ -23,9 +23,10 @@
 #   define DARRAY_H 1
 
 #include <cstddef>
+#include "eyelog_export.h"
 
 template <class T>
-class DArray {
+class EYELOG_EXPORT DArray {
     public:
 
         typedef T*          iterator;
