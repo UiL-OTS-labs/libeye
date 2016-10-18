@@ -244,13 +244,13 @@ int PGazeEntry::compare(const PGazeEntry& other) const
 {
     float diff;
     diff = m_x - other.m_x;
-    if (bool(diff))
+    if (diff != 0.0)
         return diff < 0 ? -1 : 1;
     diff = m_y - other.m_y;
-    if (bool(diff))
+    if (diff != 0.0)
         return diff < 0 ? -1 : 1;
     diff = m_pupil - other.m_pupil;
-    if (bool(diff))
+    if (diff != 0.0)
         return diff < 0 ? -1 : 1;
     return 0;
 }
@@ -356,17 +356,17 @@ int PFixationEntry::writeBinary(std::ofstream& stream) const
 
 int PFixationEntry::compare(const PFixationEntry& other)const
 {
-    float diff;
+    double diff;
     diff = m_dur - other.m_dur;
-    if (bool(diff))
+    if (diff != 0.0)
         return diff < 0 ? -1 : 1;
 
     diff = m_x - other.m_x;
-    if (bool(diff))
+    if (diff != 0.0)
         return diff < 0 ? -1 : 1;
     
     diff = m_y - other.m_y;
-    if (bool(diff))
+    if (diff  != 0.0)
         return diff < 0 ? -1 : 1;
     return 0;
 }
@@ -553,26 +553,26 @@ int PSaccadeEntry::writeBinary(std::ofstream& stream) const
 
 int PSaccadeEntry::compare(const PSaccadeEntry& other)const
 {
-    float diff;
+    double diff;
 
     diff = m_dur - other.m_dur;
-    if (bool(diff))
+    if (diff != 0.0)
         return diff < 0 ? -1 : 1;
 
     diff = m_x1 - other.m_x1;
-    if (bool(diff))
+    if (diff != 0.0)
         return diff < 0 ? -1 : 1;
 
     diff = m_y1 - other.m_y1;
-    if (bool(diff))
+    if (diff != 0.0)
         return diff < 0 ? -1 : 1;
 
     diff = m_x2 - other.m_x2;
-    if (bool(diff))
+    if (diff != 0.0)
         return diff < 0 ? -1 : 1;
 
     diff = m_y2 - other.m_y2;
-    if (bool(diff))
+    if (diff != 0.0)
         return diff < 0 ? -1 : 1;
     return 0;
 }

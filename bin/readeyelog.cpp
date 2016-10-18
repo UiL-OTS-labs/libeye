@@ -21,7 +21,7 @@
 #include <iostream>
 #include <cassert>
 #include <cstdio>
-#include <cstring>
+//#include <cstring>
 #include "EyeLog.h"
 
 /*

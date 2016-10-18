@@ -20,17 +20,8 @@
 
 #include <iostream>
 #include <cstdio>
-#include <cstring>
 #include "EyeLog.h"
 
-/*
- * Silence MS VC++ about strdup not being part of ISO C++ it will remain valid POSIX C
- */
-#if defined(MSDOS) || defined(OS2) || defined(WIN32) || defined(__CYGWIN__)
-#  define strdup _strdup
-#  pragma warning(push)
-#  pragma warning(disable:4996)
-#endif
 using namespace std;
 
 string usage = "%s <inputfile> <outputfile>\n";
