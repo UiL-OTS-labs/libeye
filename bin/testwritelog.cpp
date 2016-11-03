@@ -20,7 +20,7 @@
 
 #include <iostream>
 #include <cstdio>
-#include "EyeLog.h"
+#include <eyelog/EyeLog.h>
 
 using namespace std;
 

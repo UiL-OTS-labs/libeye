@@ -22,7 +22,7 @@
 #include <cassert>
 #include <cstdio>
 //#include <cstring>
-#include "EyeLog.h"
+#include <eyelog/EyeLog.h>
 
 /*
  * the next hack is taken from http://www.zlib.net/zlib_how.html

@@ -1,11 +1,4 @@
 
-set (EYELOG_SHARED_LIB
-     eyelog_${LIBEYE_VERSION_MAJOR}_${LIBEYE_VERSION_MINOR}
-     )
-
-set (EYELOG_STATIC_LIB
-     eyelog_${LIBEYE_VERSION_MAJOR}_${LIBEYE_VERSION_MINOR}-static
-     )
 
 # source files to build the library.
 set (LOG_SOURCES
@@ -42,7 +35,14 @@ set (INSTALL_HEADERS
         cError.h
         constants.h
         Shapes.h
+        DArray.h
         EyeLog.h
+        PEyeLogEntry.h
+        TypeDefs.h
+        BaseString.h
+        PCoordinate.h
+        PExperiment.h
+        PEyeLog.h
         )
 
 
@@ -81,5 +81,9 @@ INSTALL(TARGETS ${EYELOG_STATIC_LIB}
         )
 
 INSTALL(FILES ${INSTALL_HEADERS}
-        DESTINATION ${INSTALL_HEADER_DIR}
+        DESTINATION ${INSTALL_HEADER_DIR}/eyelog
         ) 
+
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/eyelog_export.h
+        DESTINATION ${INSTALL_HEADER_DIR}/eyelog
+        )

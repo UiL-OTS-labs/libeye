@@ -1,5 +1,5 @@
 #include <cxxtest/TestSuite.h>
-#include "../log/EyeLog.h"
+#include "../eyelog/EyeLog.h"
 #include <cstring>
 
 using namespace std;

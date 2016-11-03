@@ -24,12 +24,12 @@ source_files= [ "${CMAKE_CURRENT_SOURCE_DIR}/" + i for i in source_files]
 
 # these are the paths to include to build the extension (ugly change this).
 include_dirs = ["${CMAKE_SOURCE_DIR}",
-                "${CMAKE_BINARY_DIR}/log",
+                "${CMAKE_BINARY_DIR}/eyelog",
                 "${CMAKE_BINARY_DIR}"
                 ]
 
 libs =      ["${EYELOG_SHARED_LIB}"]
-lib_dirs =  ["${CMAKE_BINARY_DIR}/log"]
+lib_dirs =  ["${CMAKE_BINARY_DIR}/eyelog"]
 
 extra_compile_args = []
 if os.environ["CC"] == "g++":

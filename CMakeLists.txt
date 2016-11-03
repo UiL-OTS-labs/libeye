@@ -13,9 +13,19 @@ set (LIBEYE_VERSION_STRING
      "\"libeye-${LIBEYE_VERSION_MAJOR}.${LIBEYE_VERSION_MINOR}.${LIBEYE_VERSION_MICRO}\""
     )
 
-# location where to install the headers.
+# define names used throughout the library
+set (EYELOG_SHARED_LIB
+     eyelog_${LIBEYE_VERSION_MAJOR}_${LIBEYE_VERSION_MINOR}
+     )
+
+set (EYELOG_STATIC_LIB
+     eyelog_${LIBEYE_VERSION_MAJOR}_${LIBEYE_VERSION_MINOR}-static
+     )
+
+
+# location where to install the headers. This is the toplevel.
 SET(INSTALL_HEADER_DIR
-    include/${CMAKE_PROJECT_NAME}-${LIBEYE_VERSION_MAJOR}.${LIBEYE_VERSION_MINOR}
+    include/${CMAKE_PROJECT_NAME}_${LIBEYE_VERSION_MAJOR}_${LIBEYE_VERSION_MINOR}
     )
 
 # library names
@@ -49,13 +59,15 @@ INSTALL(FILES
 
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}")
-include_directories("${PROJECT_SOURCE_DIR}/log")
-include_directories("${CMAKE_BINARY_DIR}/log")
+#include_directories("${PROJECT_SOURCE_DIR}/log")
+include_directories("${CMAKE_BINARY_DIR}/eyelog") #for the export header
 
-#add the log library direcory
-add_subdirectory(log)
+#add the log library directory
+add_subdirectory(eyelog)
 #add the language bindings
 add_subdirectory(bindings)
+#add the package config directory
+add_subdirectory(pkg-config)
 
 #optionally add the binary directory
 if (BUILD_BINARIES)

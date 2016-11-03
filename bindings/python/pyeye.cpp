@@ -2,7 +2,7 @@
 
 #include <Python.h>
 
-#include <log/EyeLog.h>
+#include <eyelog/EyeLog.h>
 //#include "pyshapes.h"
 
 // python takes many strings as char* therefore we turn -Wwrite-strings off.

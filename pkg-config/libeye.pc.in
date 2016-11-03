@@ -1,0 +1,11 @@
+
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+includedir=${prefix}/@INSTALL_HEADER_DIR@
+libdir=${prefix}/lib
+
+Name:        libeye-@LIBEYE_VERSION_MAJOR@.@LIBEYE_VERSION_MINOR@.@LIBEYE_VERSION_MICRO@
+Description: A library to help with the storage and analysis of eye movement data.
+Version:     @LIBEYE_VERSION_MAJOR@.@LIBEYE_VERSION_MINOR@.@LIBEYE_VERSION_MICRO@
+Cflags:      -I${includedir}
+Libs:        -L${libdir} -l@EYELOG_SHARED_LIB@
