@@ -5,7 +5,7 @@ project(libeye CXX)
 
 include (GenerateExportHeader)
 
-#add versioning information
+#add versioning information Don't change these lines manually.
 set (LIBEYE_VERSION_MAJOR 0)
 set (LIBEYE_VERSION_MINOR 1)
 set (LIBEYE_VERSION_MICRO 0)
