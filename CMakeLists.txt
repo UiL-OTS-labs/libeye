@@ -1,7 +1,7 @@
 
 
 cmake_minimum_required(VERSION 2.8)
-project(libeye CXX) 
+project(libeye CXX C) 
 
 include (GenerateExportHeader)
 
@@ -14,12 +14,21 @@ set (LIBEYE_VERSION_STRING
     )
 
 # define names used throughout the library
+# library names
 set (EYELOG_SHARED_LIB
      eyelog_${LIBEYE_VERSION_MAJOR}_${LIBEYE_VERSION_MINOR}
      )
 
 set (EYELOG_STATIC_LIB
      eyelog_${LIBEYE_VERSION_MAJOR}_${LIBEYE_VERSION_MINOR}-static
+     )
+
+set (BASE_SHARED_LIB
+     base_${LIBEYE_VERSION_MAJOR}_${LIBEYE_VERSION_MINOR}
+     )
+
+set (BASE_STATIC_LIB
+     base_${LIBEYE_VERSION_MAJOR}_${LIBEYE_VERSION_MINOR}-static
      )
 
 
@@ -27,14 +36,6 @@ set (EYELOG_STATIC_LIB
 SET(INSTALL_HEADER_DIR
     include/${CMAKE_PROJECT_NAME}_${LIBEYE_VERSION_MAJOR}_${LIBEYE_VERSION_MINOR}
     )
-
-# library names
-set (EYELOG_SHARED_LIB
-     eyelog_${LIBEYE_VERSION_MAJOR}_${LIBEYE_VERSION_MINOR}
-     )
-set (EYELOG_STATIC_LIB
-     eyelog_${LIBEYE_VERSION_MAJOR}_${LIBEYE_VERSION_MINOR}-static
-     )
 
 
 if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
@@ -44,6 +45,12 @@ endif()
 # setting of general options
 option(BUILD_BINARIES "Build utilities that uses the library" ON)
 option(BUILD_UNIT_TESTS "Build unit tests" ON)
+
+#check for headers (Don't forget to update libeye-config.h.in)
+INCLUDE (CheckIncludeFiles)
+CHECK_INCLUDE_FILES(stdatomic.h HAVE_STDATOMIC_H)
+CHECK_INCLUDE_FILES(WinBase.h HAVE_WINBASE_H)
+
 
 # creation of a configure file
 configure_file(
@@ -62,10 +69,15 @@ include_directories("${PROJECT_SOURCE_DIR}")
 #include_directories("${PROJECT_SOURCE_DIR}/log")
 include_directories("${CMAKE_BINARY_DIR}/eyelog") #for the export header
 
-#add the log library directory
+#add subdirectories
+
+#add the library directories
+add_subdirectory(baselib)
 add_subdirectory(eyelog)
+
 #add the language bindings
 add_subdirectory(bindings)
+
 #add the package config directory
 add_subdirectory(pkg-config)
 

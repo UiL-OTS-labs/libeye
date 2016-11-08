@@ -40,7 +40,15 @@ add_custom_target(generated_files DEPENDS ${ALL_UNIT_TEST_SOURCES})
 add_executable (${UNIT_TEST} ${ALL_UNIT_TEST_SOURCES})
 add_dependencies (${UNIT_TEST} generated_files)
 
+
+if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
+    ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
+    target_compile_options(${UNIT_TEST} PUBLIC -pthread)
+    target_link_libraries(${UNIT_TEST} pthread)
+endif()
+
 set_property(TARGET ${UNIT_TEST} PROPERTY CXX_STANDARD 11)
 set_property(TARGET ${UNIT_TEST} PROPERTY CXX_STANDARD_REQUIRED ON)
 
 target_link_libraries(${UNIT_TEST} ${EYELOG_SHARED_LIB})
+target_link_libraries(${UNIT_TEST} ${BASE_SHARED_LIB})

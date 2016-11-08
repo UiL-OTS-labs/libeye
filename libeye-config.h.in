@@ -9,4 +9,7 @@
 
 #define LIBEYE_VERSION_STRING @LIBEYE_VERSION_STRING@
 
+#cmakedefine HAVE_STDATOMIC_H
+#cmakedefine HAVE_WINBASE_H
+
 #endif
