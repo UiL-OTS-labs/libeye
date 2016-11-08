@@ -63,8 +63,6 @@ namespace eye {
             //SharedPtr(SharedPtr&& other);
             SharedPtr<T>& operator= (const SharedPtr<T>& rhs);
 
-            bool operator =(const SharedPtr<T>& rhs) const;
- 
             T* get();
             const T* get()const;
 
