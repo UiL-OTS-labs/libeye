@@ -1,6 +1,7 @@
 #include <cxxtest/TestSuite.h>
-#include "../eyelog/EyeLog.h"
 #include <cstring>
+#include <functional>
+#include "../eyelog/EyeLog.h"
 
 using namespace std;
 

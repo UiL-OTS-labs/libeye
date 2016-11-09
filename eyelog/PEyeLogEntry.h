@@ -61,20 +61,20 @@ typedef DArray<PEntryPtr> PEntryVec;
  * @param[in] entries a PEntryVec
  *
  */
-PEntryVec copyPEntryVec(const PEntryVec& entries);
+EYELOG_EXPORT PEntryVec copyPEntryVec(const PEntryVec& entries);
 
 /**
  * destroys the contents of a DArray with PEntryPtr, the DArray self 
  * remains intact.
  */
-void destroyPEntyVec(PEntryVec& entries);
+EYELOG_EXPORT void destroyPEntyVec(PEntryVec& entries);
 
 /**
  * Sorts PEntryVec, sort the pointers as if they were the objects.
  */
-void sortPEntryVec(PEntryVec& entries);
+EYELOG_EXPORT void sortPEntryVec(PEntryVec& entries);
 
-class PEyeLogEntry {
+class EYELOG_EXPORT PEyeLogEntry {
 
 public :
 
@@ -174,7 +174,7 @@ protected :
     static unsigned     m_precision;// uses as precision in the output.
 };
 
-class PGazeEntry : public PEyeLogEntry {
+class EYELOG_EXPORT PGazeEntry : public PEyeLogEntry {
     friend class PEyeLogEntry;
 
 public :
@@ -255,7 +255,7 @@ private :
  * A fixation is best described by a start time, a duration
  * and its location.
  */
-class PFixationEntry : public PEyeLogEntry {
+class EYELOG_EXPORT PFixationEntry : public PEyeLogEntry {
     friend class PEyeLogEntry;
 
 public:
@@ -300,7 +300,7 @@ private:
 /**
  * This allows for logging custom messages
  */
-class PMessageEntry : public PEyeLogEntry {
+class EYELOG_EXPORT PMessageEntry : public PEyeLogEntry {
     friend class PEyeLogEntry;
 
 public :
@@ -325,7 +325,7 @@ private:
     String  m_message;
 };
 
-class PSaccadeEntry : public PEyeLogEntry {
+class EYELOG_EXPORT PSaccadeEntry : public PEyeLogEntry {
     friend class PEyeLogEntry;
 
 public:
@@ -378,7 +378,7 @@ private:
     float   m_y2;
 };
 
-class PTrialEntry : public PEyeLogEntry
+class EYELOG_EXPORT PTrialEntry : public PEyeLogEntry
 {
     friend class PEyeLogEntry;
 public:
@@ -437,7 +437,7 @@ private:
 /**
  * Marks a start of trial in a logfile
  */
-class PTrialStartEntry : public PEyeLogEntry
+class EYELOG_EXPORT PTrialStartEntry : public PEyeLogEntry
 {
     friend class PEyeLogEntry;
 public:
@@ -458,7 +458,7 @@ private:
 /**
  * Marks an end of trial in a logfile
  */
-class PTrialEndEntry : public PEyeLogEntry
+class EYELOG_EXPORT PTrialEndEntry : public PEyeLogEntry
 {
     friend class PEyeLogEntry;
 public:

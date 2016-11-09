@@ -22,11 +22,13 @@
 #ifndef PCOORDINATE_H
 #define PCOORDINATE_H
 
+#include "eyelog_export.h"
+
 
 /**
  * PCoordinate a simple class that can specify a coordinate in 2D space
  */
-class PCoordinate {
+class EYELOG_EXPORT PCoordinate {
 
     public:
 

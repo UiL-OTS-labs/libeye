@@ -1,31 +1,30 @@
 # Running unit tests
 
-set(CXX_TEST_PATH)
+set(CXX_TEST_PATH "" CACHE PATH "Add path to CxxTest utility.")
 
 # headers to build the library
-find_package(CxxTest )
-if(CXXTEST_FOUND)
-else()
-    get_filename_component(CXX_TEST_PATH DIRECTORY)
-    set(CMAKE_PREFIX_PATH ${CXX_TEST_PATH})
+if(CXX_TEST_PATH)
+##    get_filename_component(CXX_TEST_PATH DIRECTORY)
+    set(CMAKE_PREFIX_PATH   ${CXX_TEST_PATH}/bin)
+	#set(${CMAKE_INCLUDE_PATH} "${CMAKE_INCLUDE_PATH} ${CXX_TEST_PATH}/cxxtest")
+	set(CXXTEST_INCLUDE_DIR "${CXX_TEST_PATH}")
 endif()
 
-# try once more
-if (!CXXTEST_FOUND)
-    find_package(CxxTest)
-endif()
+find_package(CxxTest )
 
 if(CXXTEST_FOUND)
     option(BUILD_UNIT_TESTS "Build unit tests" ON)
     if (BUILD_UNIT_TESTS)
+	    include_directories(${CXXTEST_INCLUDE_DIR})
         set (TEST_HEADERS)
         set (TEST_SOURCES)
         set (ALL_UNIT_TEST_SOURCES)
 
-        # output that includes the main function of the unit test.
+#        # output that includes the main function of the unit test.
         set (TEST_MAIN "${CMAKE_CURRENT_BINARY_DIR}/UnitTest.cpp")
         # output name of the unit test executable
         set (UNIT_TEST unit-test)
+		set (UNIT_TEST_GENERATED unittest_generated_files)
 
         file(GLOB TEST_HEADERS  *.h)
 
@@ -35,26 +34,27 @@ if(CXXTEST_FOUND)
             string(REPLACE ".h" ".cpp" fnout ${fn})
             get_filename_component(current_filename ${fnout} NAME)
             set (fnout "${CMAKE_CURRENT_BINARY_DIR}/${current_filename}")
-            #message(STATUS "cxxtestgen is creating \"${fnout}\"")
+            message(STATUS "cxxtestgen is creating \"${fnout}\"")
             add_custom_command (OUTPUT ${fnout} 
-                                COMMAND cxxtestgen -o ${fnout}  --part --error-printer ${fn}
+                                COMMAND ${CXXTEST_TESTGEN_EXECUTABLE} -o ${fnout}  --part --error-printer ${fn}
                                 DEPENDS ${fn}                        
                                 )
             list (APPEND TEST_SOURCES ${fnout})
         endforeach(fn)
 
         add_custom_command (OUTPUT ${TEST_MAIN}
-                            COMMAND cxxtestgen --error-printer --root -o ${TEST_MAIN}
+                            COMMAND ${CXXTEST_TESTGEN_EXECUTABLE} --error-printer --root -o ${TEST_MAIN}
                             )
+        message(STATUS "cxxtestgen is creating \"${TEST_MAIN}\"")
 
-        list(APPEND ALL_UNIT_TEST_SOURCES ${TEST_SOURCES} ${TEST_MAIN})
+        list(APPEND ALL_UNIT_TEST_SOURCES ${TEST_SOURCES})
+        list(APPEND ALL_UNIT_TEST_SOURCES ${TEST_MAIN})
 
         set_source_files_properties (${ALL_UNIT_TEST_SOURCES} PROPERTIES GENERATED TRUE)
 
-        add_custom_target(generated_files DEPENDS ${ALL_UNIT_TEST_SOURCES})
+        add_custom_target(${UNIT_TEST_GENERATED} DEPENDS ${ALL_UNIT_TEST_SOURCES})
         add_executable (${UNIT_TEST} ${ALL_UNIT_TEST_SOURCES})
-        add_dependencies (${UNIT_TEST} generated_files)
-
+        add_dependencies (${UNIT_TEST} ${UNIT_TEST_GENERATED})
 
         if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
             ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")

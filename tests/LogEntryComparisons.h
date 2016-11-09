@@ -1,5 +1,7 @@
 #include <cxxtest/TestSuite.h>
+#include <functional>
 #include "../eyelog/EyeLog.h"
+
 
 class LogEntryComparisonSuite: public CxxTest::TestSuite
 {

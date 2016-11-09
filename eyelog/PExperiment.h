@@ -26,7 +26,7 @@
 #include"DArray.h"
 #include<map>
 
-class PTrial {
+class EYELOG_EXPORT PTrial {
     
     public:
 
@@ -116,7 +116,7 @@ class PTrial {
 /**
  * An instance of PExperiment contains a number of trials.
  */
-class PExperiment {
+class EYELOG_EXPORT PExperiment {
 
     public:
 

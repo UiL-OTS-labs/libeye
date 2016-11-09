@@ -37,7 +37,7 @@
  * @param out, will be initialized.
  * @param filename, the file to open.
  */
-int  readLog(PEyeLog* out, const String& filename);
+EYELOG_EXPORT int  readLog(PEyeLog* out, const String& filename);
 
 
 /**
