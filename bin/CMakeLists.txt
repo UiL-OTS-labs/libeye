@@ -18,6 +18,10 @@ set_property(TARGET readeyelog PROPERTY CXX_STANDARD 11)
 set_property(TARGET readeyelog PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET testwritelog PROPERTY CXX_STANDARD 11)
 set_property(TARGET testwritelog PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET readeyelog-static PROPERTY CXX_STANDARD 11)
+set_property(TARGET readeyelog-static PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET testwritelog-static PROPERTY CXX_STANDARD 11)
+set_property(TARGET testwritelog-static PROPERTY CXX_STANDARD_REQUIRED ON)
 
 # build the programs that link the dynamic library
 target_link_libraries(readeyelog ${EYELOG_SHARED_LIB})
