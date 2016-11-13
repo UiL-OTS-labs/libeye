@@ -10,6 +10,10 @@
 #define LIBEYE_VERSION_STRING @LIBEYE_VERSION_STRING@
 
 #cmakedefine HAVE_STDATOMIC_H
-#cmakedefine HAVE_WINBASE_H
+#cmakedefine HAVE_WINDOWS_H
+#if (HAVE_WINDOWS_H)
+// try to avoid to include to much
+#define WIN32_LEAN_AND_MEAN
+#endif
 
 #endif

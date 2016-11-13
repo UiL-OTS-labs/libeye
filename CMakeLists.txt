@@ -49,7 +49,7 @@ option(BUILD_UNIT_TESTS "Build unit tests" ON)
 #check for headers (Don't forget to update libeye-config.h.in)
 INCLUDE (CheckIncludeFiles)
 CHECK_INCLUDE_FILES(stdatomic.h HAVE_STDATOMIC_H)
-CHECK_INCLUDE_FILES(WinBase.h HAVE_WINBASE_H)
+CHECK_INCLUDE_FILES(windows.h HAVE_WINDOWS_H)
 
 
 # creation of a configure file
