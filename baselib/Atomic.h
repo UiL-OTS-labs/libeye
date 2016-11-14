@@ -25,23 +25,50 @@
 
 #include "libeye-config.h"
 
-#if defined(HAVE_STDATOMIC_H)
-#include <stdatomic.h>
+#if defined(HAVE_WINDOWS_H) and ( !defined(__GNUC__) || !defined(__clang__) )
+//#include <windows.h>
 #endif
 
 namespace eye {
-#if defined(HAVE_STDATOMIC_H)
 
-    typedef _Atomic int atomic_int;
+    class AtomicCounter {
 
-#elif defined(HAVE_WINDOWS_H) && !defined(HAVE_STDATOMIC_H)
+        public:
+            AtomicCounter() : m_cnt (0) {};
+            AtomicCounter(int n) : m_cnt (n) {};
 
-    typedef volatile LONG atomic_int;
-
+            /**
+             * Atomically increment m_count by val
+             */
+            int increment(int val=1) noexcept
+            {
+#if defined(__GNUC__) || defined(__clang__)
+                return __sync_add_and_fetch(&m_cnt, val);
+#elif defined(_MSC_VER)
+                return InterlockedAdd(&m_cnt, val);
 #endif
+            };
 
-    atomic_int atomic_increment(atomic_int* v);
-    atomic_int atomic_decrement(atomic_int* v);
+            /**
+             * Atomically decrement m_count by val
+             */
+            int decrement(int val=1) noexcept
+            {
+                return increment(-val);
+            }
+
+            int count() noexcept
+            {
+                return m_cnt;
+            }
+
+        private:
+
+            /**
+             * The integer value that represent the count.
+             */
+            volatile int32_t    m_cnt;
+    };
 
 }
 
