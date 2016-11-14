@@ -42,7 +42,7 @@ atomic_int atomic_increment(atomic_int* val)
 
 atomic_int atomic_decrement(atomic_int* val)
 {
-    return InterlockedAdd(val, 1);
+    return InterlockedAdd(val, -1);
 }
 
 #else
