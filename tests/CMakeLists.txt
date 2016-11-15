@@ -56,10 +56,21 @@ if(CXXTEST_FOUND)
         add_executable (${UNIT_TEST} ${ALL_UNIT_TEST_SOURCES})
         add_dependencies (${UNIT_TEST} ${UNIT_TEST_GENERATED})
 
-        if (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
+        if (${CMAKE_MAJOR_VERSION} GREATER "3" AND
+            ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
             ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
             target_compile_options(${UNIT_TEST} PUBLIC -pthread)
             target_link_libraries(${UNIT_TEST} pthread)
+            message(STATUS "using target compile options\"${fnout}\"")
+        elseif(${CMAKE_MAJOR_VERSION} LESS "3" AND
+            ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
+            ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
+            set_target_properties(${UNIT_TEST}
+                                  PROPERTIES
+                                  COMPILE_FLAGS "-pthread"
+                                  LINK_FLAGS "-pthread"
+                                  )
+            message(STATUS "target properties")
         endif()
 
         set_property(TARGET ${UNIT_TEST} PROPERTY CXX_STANDARD 11)

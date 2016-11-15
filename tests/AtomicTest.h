@@ -34,10 +34,10 @@ class Incrementer
 class AtomicSuite : public CxxTest::TestSuite {
 
     private:
-        
-        const int nincs = 10000;    // number of increments (and decrements)
-                                    // per thread.
-        const int nt    = 1000;      // number of threads to use.
+        // number of increments (and decrements) per thread
+        static const int nincs = 10000;
+        // number of threads to use.
+        static const int nt    = 100;
 
     public:
 
