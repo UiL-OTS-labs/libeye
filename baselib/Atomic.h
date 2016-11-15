@@ -62,6 +62,40 @@ namespace eye {
                 return m_cnt;
             }
 
+            /**
+             * Prefix increment operator
+             */
+            AtomicCounter& operator++()
+            {
+                increment();
+                return *this;
+            }
+            
+            /**
+             * Postfix increment operator
+             */
+            AtomicCounter operator++(int) noexcept
+            {
+                return AtomicCounter(increment() - 1);
+            }
+            
+            /**
+             * Prefix decrement operator
+             */
+            AtomicCounter& operator--()
+            {
+                decrement();
+                return *this;
+            }
+            
+            /**
+             * Postfix decrement operator
+             */
+            AtomicCounter operator--(int) noexcept
+            {
+                return AtomicCounter(decrement() + 1);
+            }
+
         private:
 
             /**

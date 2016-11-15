@@ -95,16 +95,18 @@ SharedPtr<T>::~SharedPtr()
 template <class T>
 SharedPtr<T>& SharedPtr<T>::operator=(const SharedPtr<T>& rhs)
 {
-    if (m_refcnt) {
-        decrement();
-        m_refcnt = rhs.m_refcnt;
-        m_ptr = rhs.m_ptr;
+    if (this != &rhs) {
+        if (m_refcnt) {
+            decrement();
+            m_refcnt = rhs.m_refcnt;
+            m_ptr = rhs.m_ptr;
+        }
+        else {
+            m_refcnt = new std::atomic<int>(0);
+            m_ptr = rhs.m_ptr;
+        }
+        increment();
     }
-    else {
-        m_refcnt = new std::atomic<int>(0);
-        m_ptr = rhs.m_ptr;
-    }
-    increment();
 
     return *this;
 }

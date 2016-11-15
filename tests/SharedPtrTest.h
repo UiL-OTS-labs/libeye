@@ -44,6 +44,24 @@ public:
         TS_ASSERT_EQUALS(sptr.get(), pint);
     }
 
+    void testSelfAsignment()
+    {
+        int* pint = new int(5);
+        SharedPtr<int> sp1 (pint);
+        sp1 = sp1;
+        TS_ASSERT_EQUALS(sp1.get(), pint);
+        TS_ASSERT_EQUALS(sp1.refcount(), 1);
+
+        SharedPtr<int> sp2 (sp1);
+        TS_ASSERT_EQUALS(sp1.refcount(), 2);
+        TS_ASSERT_EQUALS(sp2.refcount(), 2);
+        sp1 = sp2;
+        TS_ASSERT_EQUALS(sp1.refcount(), 2);
+        TS_ASSERT_EQUALS(sp2.refcount(), 2);
+        TS_ASSERT_EQUALS(sp2.get(), pint);
+        // Hopefully it doesn't crash here....
+    }
+
     void testNullPtrInit()
     {
         TS_TRACE("Testing the nullptr init.");
