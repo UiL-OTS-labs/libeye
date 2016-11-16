@@ -56,7 +56,8 @@ if(CXXTEST_FOUND)
         add_executable (${UNIT_TEST} ${ALL_UNIT_TEST_SOURCES})
         add_dependencies (${UNIT_TEST} ${UNIT_TEST_GENERATED})
 
-        if (${CMAKE_MAJOR_VERSION} GREATER "3" AND
+        if (${CMAKE_MAJOR_VERSION} GREATER "3" OR
+            ${CMAKE_MAJOR_VERSION} EQUAL   "3" AND
             ${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
             ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
             target_compile_options(${UNIT_TEST} PUBLIC -pthread)
