@@ -24,9 +24,10 @@
 #define BASE_ATOMIC_H 1
 
 #include "libeye-config.h"
+#include <stdint.h>
 
-#if defined(HAVE_WINDOWS_H) and ( !defined(__GNUC__) || !defined(__clang__) )
-//#include <windows.h>
+#if defined(HAVE_WINDOWS_H) && ( !defined(__GNUC__) || !defined(__clang__) )
+#include <windows.h>
 #endif
 
 namespace eye {
@@ -101,7 +102,11 @@ namespace eye {
             /**
              * The integer value that represent the count.
              */
+#if defined(_MSC_VER)
+			volatile LONG		m_cnt;
+#else
             volatile int32_t    m_cnt;
+#endif
     };
 
 }
