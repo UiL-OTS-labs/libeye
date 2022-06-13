@@ -23,19 +23,63 @@
 #if !defined(EYE_SHARED_PTR_H)
 #define EYE_SHARED_PTR_H 1
 
-#include <atomic>
 
 #include <baselib/base_export.h>
+#include "Atomic.h"
 
 namespace eye {
+
+    // private namespace for SharedPtr
+    namespace sp_priv {
+
+        template <typename T>
+        class RefCounter {
+
+            public:
+
+                typedef T element_type;
+                
+                RefCounter()
+                    : m_ptr(nullptr), m_counter(1)
+                {
+                }
+
+                RefCounter(T* ptr)
+                    : m_ptr(ptr), m_counter(1)
+                {
+                }
+
+                void dispose()
+                {
+                    delete m_ptr;
+                    m_ptr = nullptr;
+                }
+
+                ~RefCounter()
+                {
+                    decrement();
+                }
+
+                element_type* get();
+
+                const element_type* get();
+
+            private :
+
+                RefCounter(const RefCounter&);
+                RefCounter& operator=(const RefCounter&);
+
+                T*              m_ptr;
+                AtomicCounter   m_counter;
+        };
+    }
 
     template <class T>
     class BASE_EXPORT SharedPtr {
         
         private:
-            T*                  m_ptr;
-            std::atomic<int>   *m_refcnt;
-            //int                *m_refcnt;
+            T                  *m_ptr;
+
 
             /**
              * Decrements the reference count
